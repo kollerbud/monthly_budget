@@ -1,0 +1,5 @@
+nltk
+pandas
+pip-chill
+scikit-learn
+typing-extensions
