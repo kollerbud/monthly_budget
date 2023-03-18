@@ -1,7 +1,45 @@
+notes.txt
+api_keys.py
+save_to_db.py
+Lib/
+*/.vscode/
+Scripts/
+*/Scripts/
+filing_files/
+*/Lib/
+others/
+*.pdf
+
+git rm --cached <file>
+yfinance.cache
+share/*
+etc/*
+__pycache__/
+
+*.json
+**/__pycache__/
+__pycache__
+__pycache__/
+app/dcf_portion/__pycache__/
+
 __pycache__/
 *.py[cod]
 *$py.class
 
+# linux virtual environment
+bin/
+lib64
+run_info
+/src/cta_blue/storage/
+
+# custom
+.vscode/
+*.cfg
+*.csv
+
+
+share/
+include/
 # C extensions
 *.so
 
@@ -119,6 +157,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.json
 .env
 .venv
 env/
