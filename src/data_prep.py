@@ -42,68 +42,63 @@ class BigqueryDataLoader(DataLoader):
         pass
 
 
-class DataCleaning:
+class DataCleaner:
     '''data processing steps for data from DataLoader'''
-    _data = None
 
     def __init__(self, data_loader: DataLoader) -> None:
-        self.data = data_loader
+        self.data = data_loader.copy()
 
     def text_process(self) -> pd.DataFrame:
         '''text processes'''
-        # make a copy of raw data
-        self._data = self.data.loader_output().copy()
-
         # remove all numbers from description, and punction symbols
         for col in ['Description', 'City/State']:
             # convert to lower case
-            self._data[col] = self._data[col].str.lower()
+            self.data[col] = self.data[col].str.lower()
             # text string clean up
-            self._data[col] = (
-                self._data[col]
+            self.data[col] = (
+                self.data[col]
                 .str.replace(r'\d+', '', regex=True)
                 .str.replace('[^\w\s]', '', regex=True)
                 .str.replace('\n', ' ', regex=True)
                 )
             # remove leading and trailing white spaces
-            self._data[col] = self._data[col].str.strip()
+            self.data[col] = self.data[col].str.strip()
 
         # remove excess white space between words
-        self._data['Description'] = (
-            self._data['Description'].str.replace(r'\s+', ' ', regex=True)
+        self.data['Description'] = (
+            self.data['Description'].str.replace(r'\s+', ' ', regex=True)
             )
 
         # remove city and state from string
         # by referencing "City/State" column
-        self._data['Description'] = [
+        self.data['Description'] = [
             x.replace(str(y), '') for x, y in
-            zip(self._data['Description'],
-                self._data['City/State'])
+            zip(self.data['Description'],
+                self.data['City/State'])
             ]
 
-        return self._data
+        return self.data
 
-    def remove_payment(self):
+    def remove_payment(self) -> pd.DataFrame:
         'remove payment rows where I paid the credit amount'
-        payment_mask = self._data['Category'].isin(['Payment'])
-        self._data = self._data[~payment_mask]
+        payment_mask = self.data['Category'].isin(['Payment'])
+        self.data = self.data[~payment_mask]
 
-    def clean_output(self):
+    def cleaner_output(self) -> pd.DataFrame:
         'run all cleaning processes and output the clean data'
         # run all data cleaning steps
         self.text_process()
         self.remove_payment()
-        # last check for _data modification
-        if self._data is None:
+        # last check for data modification
+        if self.data is None:
             raise ValueError('No data has been processed')
-        return self._data
+        return self.data
 
 def run():
 
-    loader = TrainCSVDataLoader(file_path='rawData/activity.csv')
-    text_processor = DataCleaning(data_loader=loader).clean_output()
+    loader = TrainCSVDataLoader(file_path='raw_data/activity.csv').loader_output()
+    text_processor = DataCleaner(data_loader=loader).cleaner_output()
     print(text_processor.sample(10))
-
 
 if __name__ == '__main__':
     run()

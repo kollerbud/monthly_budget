@@ -36,6 +36,7 @@ run_info
 .vscode/
 *.cfg
 *.csv
+*.joblib
 
 
 share/
