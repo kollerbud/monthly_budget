@@ -1,27 +1,13 @@
 'Modeling and metrics here'
-from abc import ABC, abstractmethod
 import joblib
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from text_encode import ProcessedData, LoadEncoder
+from text_encode import ProcessedData, LoadEncoder, MakeEncoder
 from data_prep import DataCleaner, TrainCSVDataLoader
 
 
-# use strategy design pattern by class composition
-class Models(ABC):
-    '''Train model or use pre-trained model '''
-    @abstractmethod
-    def __init__(self,
-                 prep_data: ProcessedData,
-                 model = None) -> None:
-        'load the clean data from preprocessing'
-        self.prep_data = prep_data
-        self.model = model
-
-    # not sure what to do yet
-
-
-class TrainModel(Models):
+class TrainModel:
     '''Use the random forest model'''
 
     x_train = None
@@ -35,7 +21,7 @@ class TrainModel(Models):
 
         self.prep_data = prep_data
 
-    def train_test_split(self, train_size: float = 0.75):
+    def split(self, train_size: float = 0.75) -> None:
         'split data into train and test'
         (self.x_train, self.x_test,
          self.y_train, self.y_test) = (
@@ -45,7 +31,9 @@ class TrainModel(Models):
                              random_state=42)
             )
 
-    def train_model(self, model = None):
+        return self
+
+    def train_model(self, model=None):
         '''train model'''
         self.model = model.fit(self.x_train, self.y_train)
         return self
@@ -59,32 +47,29 @@ class TrainModel(Models):
         joblib.dump(self.model, f'saved_models/{model_name}.joblib')
 
 
-class UseModel(Models):
+class UseModel:
     '''Load and use existing models'''
 
     model = None
 
     def __init__(self,
                  prep_data: ProcessedData) -> None:
-        
         self.prep_data = prep_data
 
-
-    def load_model(self, model_path) -> Models:
+    def load_model(self, model_path):
         'load existing model'
         self.model = joblib.load(model_path)
-
         return self
 
-    def load_decoder(self, file_path):
+    def load_decoder(self, file_path) -> joblib:
         'load decoder to translate back predictions'
         return joblib.load(filename=file_path)
 
-    def make_prediction(self):
+    def make_prediction(self) -> np.ndarray:
         'predict using model'
         return self.model.predict(self.prep_data['feature_data'])
 
-    def result(self, decoder_path):
+    def result(self, decoder_path) -> np.ndarray:
         'translate predicted outputs to previous encoded names'
         pred = self.make_prediction()
         translator = self.load_decoder(file_path=decoder_path)
@@ -93,19 +78,30 @@ class UseModel(Models):
         return translate
 
 
-def pipeline():
-    file_path = 'raw_data/activity.csv'
-    i = ProcessedData(TrainCSVDataLoader(file_path=file_path),
+def train_pipeline():
+    file_path = 'raw_data/all_year.csv'
+    i = ProcessedData(TrainCSVDataLoader(file_path=file_path,
+                        use_cols=['Description', 'Amount', 'City/State',
+                                  'Zip Code', 'Category']),
+                      cleaner=DataCleaner,
+                      encoder=MakeEncoder).run()
+    model = TrainModel(prep_data=i).split()
+    model.train_model(model=RandomForestClassifier())
+    model.save_model(model_name='rf')
+    print(model.score())
+
+def use_pipeline():
+    file_path = 'raw_data/activity_feb.csv'
+    i = ProcessedData(TrainCSVDataLoader(file_path=file_path,
+                        use_cols=['Description', 'Amount', 'City/State',
+                                  'Zip Code', 'Category']),
                       cleaner=DataCleaner,
                       encoder=LoadEncoder).run()
-    model = UseModel(prep_data=i).load_model(model_path='saved_models/rf.joblib')
-    print(model.result(decoder_path='saved_models/category_encoder.joblib'))
-    
+    model = UseModel(prep_data=i)
+    model.load_model(model_path='saved_models/rf.joblib')
+
+    res = model.result(decoder_path='saved_models/category_encoder.joblib')
+    print(res)
 
 if __name__ == '__main__':
-    pipeline()
-
-
-
-
-
+    use_pipeline()
