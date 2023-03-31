@@ -2,13 +2,11 @@
 import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from text_encode import ProcessedData, LoadEncoder, MakeEncoder
-from data_prep import DataCleaner, TrainCSVDataLoader
+from text_encode import ProcessedData
 
 
 class TrainModel:
-    '''Use the random forest model'''
+    '''Use prepared data to train a model'''
 
     x_train = None
     x_test = None
@@ -76,32 +74,3 @@ class UseModel:
         translate = translator.inverse_transform(pred)
 
         return translate
-
-
-def train_pipeline():
-    file_path = 'raw_data/all_year.csv'
-    i = ProcessedData(TrainCSVDataLoader(file_path=file_path,
-                        use_cols=['Description', 'Amount', 'City/State',
-                                  'Zip Code', 'Category']),
-                      cleaner=DataCleaner,
-                      encoder=MakeEncoder).run()
-    model = TrainModel(prep_data=i).split()
-    model.train_model(model=RandomForestClassifier())
-    model.save_model(model_name='rf')
-    print(model.score())
-
-def use_pipeline():
-    file_path = 'raw_data/activity_feb.csv'
-    i = ProcessedData(TrainCSVDataLoader(file_path=file_path,
-                        use_cols=['Description', 'Amount', 'City/State',
-                                  'Zip Code', 'Category']),
-                      cleaner=DataCleaner,
-                      encoder=LoadEncoder).run()
-    model = UseModel(prep_data=i)
-    model.load_model(model_path='saved_models/rf.joblib')
-
-    res = model.result(decoder_path='saved_models/category_encoder.joblib')
-    print(res)
-
-if __name__ == '__main__':
-    use_pipeline()

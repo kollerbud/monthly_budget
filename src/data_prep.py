@@ -27,7 +27,7 @@ class TrainCSVDataLoader:
         return self.select_cols()
 
 
-class MonthlyCSVDataLoader:
+class BigqueryDataLoader:
     '''read table from Bigquery'''
     def __init__(self) -> None:
         pass
@@ -41,27 +41,20 @@ class DataCleaner:
 
     def text_process(self) -> pd.DataFrame:
         '''text processes'''
-        # remove all numbers from description, and punction symbols
         for col in ['Description', 'City/State']:
-            # convert to lower case
             self.data[col] = self.data[col].str.lower()
-            # text string clean up
             self.data[col] = (
                 self.data[col]
                 .str.replace(r'\d+', '', regex=True)
                 .str.replace('[^\w\s]', '', regex=True)
                 .str.replace('\n', ' ', regex=True)
                 )
-            # remove leading and trailing white spaces
             self.data[col] = self.data[col].str.strip()
 
-        # remove excess white space between words
         self.data['Description'] = (
             self.data['Description'].str.replace(r'\s+', ' ', regex=True)
             )
 
-        # remove city and state from string
-        # by referencing "City/State" column
         self.data['Description'] = [
             x.replace(str(y), '') for x, y in
             zip(self.data['Description'],
@@ -69,9 +62,8 @@ class DataCleaner:
             ]
         return self.data
 
-    def clean_category(self):
+    def clean_category(self) -> None:
         '''clean up categories'''
-        # blank line is the payment, should remove
         self.data.dropna(subset=['Category'], inplace=True)
         self.data['Category'] = self.data['Category'].str.split('-').str[0]
 
@@ -96,13 +88,13 @@ class DataCleaner:
             raise ValueError('No data has been processed')
         return self.data
 
-def run():
-
-    loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
-                                use_cols= ['Description', 'Amount', 'City/State',
-                                        'Zip Code', 'Category']).loader_output()
-    text_processor = DataCleaner(data_loader=loader).cleaner_output()
-    print(text_processor.sample(10))
 
 if __name__ == '__main__':
+    def run():
+        loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
+                                    use_cols= ['Description', 'Amount', 'City/State',
+                                            'Zip Code', 'Category']).loader_output()
+        text_processor = DataCleaner(data_loader=loader).cleaner_output()
+        print(text_processor.sample(10))
+
     run()
