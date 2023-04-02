@@ -79,7 +79,7 @@ class LoadEncoder:
         matrix_array = count_matrix.toarray()
 
         return matrix_array
-    
+
     def columns_to_np(self):
         '''convert pandas columns to numpy array'''
         return self.clean_data['Amount'].to_numpy()
@@ -119,12 +119,13 @@ class ProcessedData:
         return self.encoder(clean_ouput).transformed()
 
 
-def run():
-    loader = TrainCSVDataLoader(file_path='raw_data/activity.csv',
-                                use_cols= ['Description', 'Amount', 'City/State',
-                                            'Zip Code', 'Category'])
-    print(ProcessedData(loader=loader,
-                        cleaner=DataCleaner,
-                        encoder=MakeEncoder).run())
+
 if __name__ == '__main__':
+    def run():
+        loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
+                                    use_cols= ['Description', 'Amount', 'City/State',
+                                                'Zip Code', 'Category'])
+        print(ProcessedData(loader=loader,
+                            cleaner=DataCleaner,
+                            encoder=MakeEncoder).run())
     run()
