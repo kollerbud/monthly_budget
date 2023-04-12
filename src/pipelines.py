@@ -14,7 +14,7 @@ def train_pipeline():
                       cleaner=DataCleaner,
                       encoder=MakeEncoder).run()
     
-    m = TrainModel(prep_data=i).split()
+    m = TrainModel(encoded_data=i).split()
     model = RandomForestClassifier(random_state=42)
     m.train_model(model=model)
     print(model.get_params())
@@ -34,4 +34,4 @@ def use_pipeline():
     res = model.result(decoder_path='saved_models/category_encoder.joblib')
     print(res)
 
-use_pipeline()
+train_pipeline()

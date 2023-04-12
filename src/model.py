@@ -1,5 +1,4 @@
 'Modeling and metrics here'
-import joblib
 import pickle
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -16,21 +15,25 @@ class TrainModel:
     model = None
 
     def __init__(self,
-                 prep_data: ProcessedData) -> None:
+                 encoded_data: ProcessedData) -> None:
 
-        self.prep_data = prep_data
+        self._data = encoded_data.encoded()
 
     def split(self, train_size: float = 0.75) -> None:
         'split data into train and test'
         (self.x_train, self.x_test,
          self.y_train, self.y_test) = (
-            train_test_split(self.prep_data['feature_data'],
-                             self.prep_data['target_data'],
+            train_test_split(self._data['feature_data'],
+                             self._data['target_data'],
                              train_size=train_size,
                              random_state=42)
             )
 
         return self
+
+    def score(self):
+        'output model score'
+        return self.model.score(self.x_test, self.y_test)
 
     def train_model(self, model=None):
         '''train model'''
@@ -38,9 +41,13 @@ class TrainModel:
         print(f'model accuracy score is: {self.score()}')
         return self
 
-    def score(self):
-        'output model score'
-        return self.model.score(self.x_test, self.y_test)
+    def save_models(self, model_loc: str = None):
+        'save current model'
+        pickle.dump(self.model,
+                    open(f'{model_loc}/model.pkl', 'wb')
+                    )
+        return f'model saved to "{model_loc}"'
+
 
 
 class UseModel:
@@ -49,8 +56,8 @@ class UseModel:
     model = None
 
     def __init__(self,
-                 prep_data: ProcessedData) -> None:
-        self.prep_data = prep_data
+                 encoded_data: ProcessedData) -> None:
+        self._data = encoded_data.transformed()
 
     def load_model(self, model_path):
         'load existing model'
