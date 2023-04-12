@@ -13,10 +13,13 @@ def train_pipeline():
                                   'Zip Code', 'Category']),
                       cleaner=DataCleaner,
                       encoder=MakeEncoder).run()
-    model = TrainModel(prep_data=i).split()
-    model.train_model(model=LogisticRegression())
-    model.save_model(model_name='lr')
-    print(model.score())
+    
+    m = TrainModel(prep_data=i).split()
+    model = RandomForestClassifier(random_state=42)
+    m.train_model(model=model)
+    print(model.get_params())
+    #model.save_model(model_name='rf')
+
 
 def use_pipeline():
     file_path = 'raw_data/activity_feb.csv'
@@ -26,7 +29,7 @@ def use_pipeline():
                       cleaner=DataCleaner,
                       encoder=LoadEncoder).run()
     model = UseModel(prep_data=i)
-    model.load_model(model_path='saved_models/lr.joblib')
+    model.load_model(model_path='saved_models/rf.pkl')
 
     res = model.result(decoder_path='saved_models/category_encoder.joblib')
     print(res)

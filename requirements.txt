@@ -1,5 +1,6 @@
-nltk
-pandas
-pip-chill
-scikit-learn
-typing-extensions
+google-cloud-storage==2.8.0
+matplotlib==3.7.1
+pandas==2.0.0
+pip-chill==1.0.1
+python-dotenv==1.0.0
+scikit-learn==1.0

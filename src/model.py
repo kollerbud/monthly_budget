@@ -1,5 +1,6 @@
 'Modeling and metrics here'
 import joblib
+import pickle
 import numpy as np
 from sklearn.model_selection import train_test_split
 from text_encode import ProcessedData
@@ -34,15 +35,12 @@ class TrainModel:
     def train_model(self, model=None):
         '''train model'''
         self.model = model.fit(self.x_train, self.y_train)
+        print(f'model accuracy score is: {self.score()}')
         return self
 
     def score(self):
         'output model score'
         return self.model.score(self.x_test, self.y_test)
-
-    def save_model(self, model_name):
-        'save trained model'
-        joblib.dump(self.model, f'saved_models/{model_name}.joblib')
 
 
 class UseModel:
@@ -56,10 +54,10 @@ class UseModel:
 
     def load_model(self, model_path):
         'load existing model'
-        self.model = joblib.load(model_path)
+        self.model = pickle.load(open(model_path, 'rb'))
         return self
 
-    def load_decoder(self, file_path) -> joblib:
+    def load_decoder(self, file_path) -> pickle:
         'load decoder to translate back predictions'
         return joblib.load(filename=file_path)
 

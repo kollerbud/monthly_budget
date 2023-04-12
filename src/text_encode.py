@@ -4,7 +4,7 @@ from typing import Dict
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-import joblib
+import pickle
 from data_prep import TrainCSVDataLoader, DataCleaner
 
 
@@ -25,21 +25,21 @@ class Encoder(ABC):
 
 class MakeEncoder(Encoder):
     '''encode and transform the text data from cleaned data'''
+    feature_encoder: CountVectorizer
+    target_encoder: LabelEncoder
 
     def __init__(self,
                  clean_data: DataCleaner = None) -> None:
 
-        self.clean_data = clean_data
+        self.clean_data = clean_data.cleaner_output()
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
         # CountVectorizer
-        count_vec = CountVectorizer(encoding='ISO-8859-1')
-        count_matrix = count_vec.fit_transform(self.clean_data['Description'])
+        self.feature_encoder = CountVectorizer(encoding='ISO-8859-1')
+        count_matrix = self.feature_encoder.fit_transform(self.clean_data['Description'])
         matrix_array = count_matrix.toarray()
 
-        # save encoder
-        joblib.dump(count_vec, 'saved_models/vectorizer.joblib')
         return matrix_array
 
     def columns_to_np(self):
@@ -48,12 +48,10 @@ class MakeEncoder(Encoder):
 
     def target_encode(self) -> np.ndarray:
         '''encode target variable'''
-        encode = LabelEncoder()
+        self.target_encoder = LabelEncoder()
         category = self.clean_data['Category'].values
-        category_encode = encode.fit_transform(category.reshape(-1, 1).ravel())
-
-        # save encoder
-        joblib.dump(encode, 'saved_models/category_encoder.joblib')
+        category_encode = self.target_encoder.fit_transform(category.reshape(-1, 1).ravel())
+        
         return category_encode
 
     def transformed(self) -> np.ndarray:
@@ -63,18 +61,31 @@ class MakeEncoder(Encoder):
                 'target_data': self.target_encode(),
                 }
 
+    def save_encoders(self, file_loc):
+        pickle.dump(self.feature_encoder,
+                    open(f'{file_loc}/desp_transformer.pkl', 'wb')
+                    )
+        pickle.dump(self.target_encoder,
+                    open(f'{file_loc}/target_transformer.pkl', 'wb')
+                    )
+
 
 class LoadEncoder:
     '''load trained encoders'''
+    feature_encoder: CountVectorizer
+    target_encoder: LabelEncoder
 
     def __init__(self,
-                 clean_data: DataCleaner = None) -> None:
-        self.clean_data = clean_data
+                 file_loc: str,
+                 clean_data: DataCleaner,
+                  ) -> None:
+        self.clean_data = clean_data.cleaner_output()
+        self.file_loc = file_loc
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
         # load CountVectorizer
-        count_vec = joblib.load('saved_models/vectorizer.joblib')
+        count_vec = pickle.load(open(f'{self.file_loc}/desp_transformer.pkl', 'rb'))
         count_matrix = count_vec.transform(self.clean_data['Description'])
         matrix_array = count_matrix.toarray()
 
@@ -86,7 +97,7 @@ class LoadEncoder:
 
     def target_encode(self) -> np.ndarray:
         '''encode target variable'''
-        encode = joblib.load('saved_models/category_encoder.joblib')
+        encode = pickle.load(open(f'{self.file_loc}/target_transformer.pkl', 'rb'))
         category = self.clean_data['Category'].values
         category_encode = encode.transform(category.reshape(-1, 1).ravel())
 
@@ -103,7 +114,8 @@ class LoadEncoder:
 
 class ProcessedData:
     '''combined pre-modeling steps together'''
-    def __init__(self, loader,
+    def __init__(self, 
+                 loader,
                  cleaner: DataCleaner,
                  encoder: Encoder
                  ) -> None:
@@ -113,8 +125,8 @@ class ProcessedData:
 
     def run(self) -> Dict[str, np.ndarray]:
         'output data ready for modeling'
-        load_output = self.loader.loader_output()
-        clean_ouput = self.cleaner(load_output).cleaner_output()
+        load_output = self.loader
+        clean_ouput = self.cleaner(load_output)
 
         return self.encoder(clean_ouput).transformed()
 
@@ -122,10 +134,20 @@ class ProcessedData:
 
 if __name__ == '__main__':
     def run():
+        """
         loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
                                                 'Zip Code', 'Category'])
         print(ProcessedData(loader=loader,
                             cleaner=DataCleaner,
                             encoder=MakeEncoder).run())
+        """
+        loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
+                                    use_cols= ['Description', 'Amount', 'City/State',
+                                                'Zip Code', 'Category'])
+        cleaner = DataCleaner(loader)
+        i = LoadEncoder(file_loc='saved_models', clean_data=cleaner)
+        print(i.transformed())
+
+        
     run()

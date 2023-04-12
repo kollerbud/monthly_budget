@@ -37,7 +37,7 @@ run_info
 *.cfg
 *.csv
 *.joblib
-
+cloud-sql-proxy
 
 share/
 include/

@@ -37,7 +37,7 @@ class DataCleaner:
     '''data processing steps for data from DataLoader'''
 
     def __init__(self, data_loader) -> None:
-        self.data = data_loader.copy()
+        self.data = data_loader.loader_output()
 
     def text_process(self) -> pd.DataFrame:
         '''text processes'''
@@ -93,8 +93,11 @@ if __name__ == '__main__':
     def run():
         loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
-                                            'Zip Code', 'Category']).loader_output()
-        text_processor = DataCleaner(data_loader=loader).cleaner_output()
-        print(text_processor.sample(10))
+                                            'Zip Code', 'Category'])
+           
+        text_processor = DataCleaner(data_loader=loader)
+        print(text_processor.cleaner_output())
+        
+        
 
     run()
