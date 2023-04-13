@@ -32,7 +32,7 @@ class MakeEncoder(Encoder):
                  file_loc: str = None,
                  clean_data: DataCleaner = None) -> None:
 
-        self.clean_data = clean_data.cleaner_output()
+        self.clean_data = clean_data
         self.file_loc = file_loc
 
     def descp_encode(self) -> np.ndarray:
@@ -63,16 +63,6 @@ class MakeEncoder(Encoder):
                 'target_data': self.target_encode(),
                 }
 
-    def save_encoders(self):
-        'save encoders to model file'
-        pickle.dump(self.feature_encoder,
-                    open(f'{self.file_loc}/desp_encoder.pkl', 'wb')
-                    )
-        pickle.dump(self.target_encoder,
-                    open(f'{self.file_loc}/target_encoder.pkl', 'wb')
-                    )
-
-        return f'encoders saved to "{self.file_loc}"'
 
 
 class LoadEncoder:
@@ -84,7 +74,7 @@ class LoadEncoder:
                  file_loc: str,
                  clean_data: DataCleaner,
                  ) -> None:
-        self.clean_data = clean_data.cleaner_output()
+        self.clean_data = clean_data
         self.file_loc = file_loc
 
     def descp_encode(self) -> np.ndarray:
@@ -117,6 +107,26 @@ class LoadEncoder:
                 }
 
 
+class SaveEncoders:
+    
+    def __init__(self, file_loc: str,
+                 encoder: Encoder) -> None:
+        self.file_loc = file_loc
+        self.encoder = encoder
+        
+    def save_encoders(self):
+        'save encoders to model file'
+        pickle.dump(self.encoder.feature_encoder,
+                    open(f'{self.file_loc}/desp_encoder.pkl', 'wb')
+                    )
+        pickle.dump(self.encoder.target_encoder,
+                    open(f'{self.file_loc}/target_encoder.pkl', 'wb')
+                    )
+
+        return f'encoders saved to "{self.file_loc}"'
+
+
+
 class ProcessedData:
     '''combined pre-modeling steps together'''
     def __init__(self,
@@ -128,14 +138,16 @@ class ProcessedData:
         self.loader = loader
         self.cleaner = cleaner
         self.encoder = encoder
-        self.file_loc = file_loc
+        
 
     def run(self) -> Dict[str, np.ndarray]:
         'output data ready for modeling'
-        load_output = self.loader
-        clean_output = self.cleaner(load_output)
+        load_output = self.loader.loader_output()
+        clean_output = self.cleaner(load_output).cleaner_output()
+        encoded = self.encoder(clean_data=clean_output,
+                               file_loc=self.file_loc)
 
-        return self.encoder(file_loc=self.file_loc, clean_data=clean_output).encoded()
+        return encoded.encoded()
 
 
 
@@ -152,7 +164,10 @@ if __name__ == '__main__':
         loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
                                                 'Zip Code', 'Category'])
-        x = ProcessedData(loader=loader, cleaner=DataCleaner, encoder=LoadEncoder, file_loc='saved_models/').run()        
+        x = ProcessedData(loader=loader,
+                          cleaner=DataCleaner,
+                          encoder=MakeEncoder,
+                          file_loc='saved_models').run()        
         print(x)
 
     run()

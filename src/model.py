@@ -8,24 +8,24 @@ from text_encode import ProcessedData
 class TrainModel:
     '''Use prepared data to train a model'''
 
-    x_train = None
-    x_test = None
-    y_train = None
-    y_test = None
-    model = None
-
     def __init__(self,
-                 encoded_data: ProcessedData) -> None:
+                 encoded_data: ProcessedData,
+                 model = None) -> None:
 
         self._data = encoded_data.encoded()
+        self.model = model
+        self.x_train = None
+        self.y_train = None
+        self.x_test = None
+        self.y_test = None
 
-    def split(self, train_size: float = 0.75) -> None:
+    def split(self) -> None:
         'split data into train and test'
         (self.x_train, self.x_test,
          self.y_train, self.y_test) = (
             train_test_split(self._data['feature_data'],
                              self._data['target_data'],
-                             train_size=train_size,
+                             train_size=0.75,
                              random_state=42)
             )
 
@@ -35,9 +35,10 @@ class TrainModel:
         'output model score'
         return self.model.score(self.x_test, self.y_test)
 
-    def train_model(self, model=None):
+    def train_model(self):
         '''train model'''
-        self.model = model.fit(self.x_train, self.y_train)
+        self.split()
+        self.model.fit(self.x_train, self.y_train)
         print(f'model accuracy score is: {self.score()}')
         return self
 
@@ -66,7 +67,7 @@ class UseModel:
 
     def load_decoder(self, file_path) -> pickle:
         'load decoder to translate back predictions'
-        return joblib.load(filename=file_path)
+        return pickle.load(filename=file_path)
 
     def make_prediction(self) -> np.ndarray:
         'predict using model'

@@ -8,16 +8,14 @@ from sklearn.linear_model import LogisticRegression
 
 def train_pipeline():
     file_path = 'raw_data/all_year.csv'
-    i = ProcessedData(TrainCSVDataLoader(file_path=file_path,
-                        use_cols=['Description', 'Amount', 'City/State',
-                                  'Zip Code', 'Category']),
-                      cleaner=DataCleaner,
-                      encoder=MakeEncoder).run()
+    loader = TrainCSVDataLoader(file_path=file_path,
+                                use_cols=['Description', 'Amount', 'City/State',
+                                  'Zip Code', 'Category'])
+    i = ProcessedData(loader=loader,
+                      cleaner=DataCleaner, encoder=LoadEncoder, file_loc='saved_models/')
     
-    m = TrainModel(encoded_data=i).split()
-    model = RandomForestClassifier(random_state=42)
-    m.train_model(model=model)
-    print(model.get_params())
+    m = TrainModel(encoded_data=i, model=RandomForestClassifier())
+    print(m.get_params())
     #model.save_model(model_name='rf')
 
 
