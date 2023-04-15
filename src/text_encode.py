@@ -1,5 +1,4 @@
 '''Encoding text data'''
-from abc import ABC, abstractmethod
 from typing import Dict
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
@@ -8,32 +7,15 @@ import pickle
 from data_prep import TrainCSVDataLoader, DataCleaner
 
 
-class Encoder(ABC):
-    '''encode text columns'''
-    @abstractmethod
-    def descp_encode(self) -> np.ndarray:
-        '''encode description column'''
-
-    @abstractmethod
-    def target_encode(self) -> np.ndarray:
-        '''encode target variable'''
-
-    @abstractmethod
-    def encoded(self) -> np.ndarray:
-        '''output the transformed data'''
-
-
-class MakeEncoder(Encoder):
+class MakeEncoder:
     '''encode and transform the text data from cleaned data'''
-    feature_encoder: CountVectorizer
-    target_encoder: LabelEncoder
-
     def __init__(self,
-                 file_loc: str = None,
-                 clean_data: DataCleaner = None) -> None:
-
+                 clean_data: DataCleaner = None,
+                 encoder_path: str = None) -> None:
+        self.path = encoder_path
         self.clean_data = clean_data
-        self.file_loc = file_loc
+        self.feature_encoder = None
+        self.target_encoder = None
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
@@ -56,31 +38,44 @@ class MakeEncoder(Encoder):
 
         return category_encode
 
+    def save_encoders(self):
+        'save encoders to model file'
+        pickle.dump(self.feature_encoder,
+                    open(f'{self.path}/desp_encoder.pkl', 'wb')
+                    )
+        pickle.dump(self.target_encoder,
+                    open(f'{self.path}/target_encoder.pkl', 'wb')
+                    )
+        return f'encoders saved to {self.path}'
+
     def encoded(self) -> np.ndarray:
         'combine encoded and unencoded columns'
-        return {'feature_data': np.concatenate(
-                (self.descp_encode(), self.columns_to_np()[:, None]), axis=1),
-                'target_data': self.target_encode(),
+        feature_data = np.concatenate(
+                (self.descp_encode(), self.columns_to_np()[:, None]), axis=1)
+        target_data = self.target_encode()
+        # saved generated encoders
+        self.save_encoders()
+        return {'feature_data': feature_data,
+                'target_data': target_data,
                 }
-
 
 
 class LoadEncoder:
     '''load trained encoders'''
-    feature_encoder: CountVectorizer
-    target_encoder: LabelEncoder
 
     def __init__(self,
-                 file_loc: str,
+                 encoder_path: str,
                  clean_data: DataCleaner,
                  ) -> None:
         self.clean_data = clean_data
-        self.file_loc = file_loc
+        self.path = encoder_path
+        self.feature_encoder = None
+        self.target_encoder = None        
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
         # load CountVectorizer
-        count_vec = pickle.load(open(f'{self.file_loc}/desp_encoder.pkl', 'rb'))
+        count_vec = pickle.load(open(f'{self.path}/desp_encoder.pkl', 'rb'))
         count_matrix = count_vec.transform(self.clean_data['Description'])
         matrix_array = count_matrix.toarray()
 
@@ -92,7 +87,7 @@ class LoadEncoder:
 
     def target_encode(self) -> np.ndarray:
         '''encode target variable'''
-        encode = pickle.load(open(f'{self.file_loc}/target_encoder.pkl', 'rb'))
+        encode = pickle.load(open(f'{self.path}/target_encoder.pkl', 'rb'))
         category = self.clean_data['Category'].values
         category_encode = encode.transform(category.reshape(-1, 1).ravel())
 
@@ -100,30 +95,13 @@ class LoadEncoder:
 
     def encoded(self) -> np.ndarray:
         'combine encoded and unencoded columns'
-        # output feature dataset and target dataset
-        return {'feature_data': np.concatenate(
-                (self.descp_encode(), self.columns_to_np()[:, None]), axis=1),
-                'target_data': self.target_encode(),
+        feature_data = np.concatenate(
+                (self.descp_encode(), self.columns_to_np()[:, None]), axis=1)
+        target_data = self.target_encode()
+        # saved generated encoders
+        return {'feature_data': feature_data,
+                'target_data': target_data,
                 }
-
-
-class SaveEncoders:
-    
-    def __init__(self, file_loc: str,
-                 encoder: Encoder) -> None:
-        self.file_loc = file_loc
-        self.encoder = encoder
-        
-    def save_encoders(self):
-        'save encoders to model file'
-        pickle.dump(self.encoder.feature_encoder,
-                    open(f'{self.file_loc}/desp_encoder.pkl', 'wb')
-                    )
-        pickle.dump(self.encoder.target_encoder,
-                    open(f'{self.file_loc}/target_encoder.pkl', 'wb')
-                    )
-
-        return f'encoders saved to "{self.file_loc}"'
 
 
 
@@ -131,43 +109,35 @@ class ProcessedData:
     '''combined pre-modeling steps together'''
     def __init__(self,
                  loader,
-                 cleaner: DataCleaner,
-                 encoder: Encoder,
-                 file_loc: str = None
+                 cleaner,
+                 encoder,
+                 encoder_path: str = None
                  ) -> None:
         self.loader = loader
         self.cleaner = cleaner
         self.encoder = encoder
-        
-
+        self.path = encoder_path
+    
     def run(self) -> Dict[str, np.ndarray]:
         'output data ready for modeling'
         load_output = self.loader.loader_output()
         clean_output = self.cleaner(load_output).cleaner_output()
-        encoded = self.encoder(clean_data=clean_output,
-                               file_loc=self.file_loc)
+        encoded = self.encoder(encoder_path=self.path,
+                               clean_data=clean_output)
 
         return encoded.encoded()
 
 
-
 if __name__ == '__main__':
     def run():
-        """
-        loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
-                                    use_cols= ['Description', 'Amount', 'City/State',
-                                                'Zip Code', 'Category'])
-        print(ProcessedData(loader=loader,
-                            cleaner=DataCleaner,
-                            encoder=MakeEncoder).run())
-        """
         loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
                                                 'Zip Code', 'Category'])
         x = ProcessedData(loader=loader,
                           cleaner=DataCleaner,
-                          encoder=MakeEncoder,
-                          file_loc='saved_models').run()        
+                          encoder=LoadEncoder,
+                          save_model=False,
+                          encoder_path='saved_models').run()
         print(x)
 
     run()

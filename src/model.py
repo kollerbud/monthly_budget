@@ -5,19 +5,21 @@ from sklearn.model_selection import train_test_split
 from text_encode import ProcessedData
 
 
+
 class TrainModel:
     '''Use prepared data to train a model'''
+    x_train = None
+    y_train = None
+    x_test = None
+    y_test = None
 
     def __init__(self,
                  encoded_data: ProcessedData,
                  model = None) -> None:
 
-        self._data = encoded_data.encoded()
+        self._data = encoded_data
         self.model = model
-        self.x_train = None
-        self.y_train = None
-        self.x_test = None
-        self.y_test = None
+
 
     def split(self) -> None:
         'split data into train and test'
@@ -29,18 +31,16 @@ class TrainModel:
                              random_state=42)
             )
 
-        return self
-
-    def score(self):
-        'output model score'
-        return self.model.score(self.x_test, self.y_test)
-
     def train_model(self):
         '''train model'''
         self.split()
         self.model.fit(self.x_train, self.y_train)
         print(f'model accuracy score is: {self.score()}')
         return self
+
+    def score(self):
+        'output model score'
+        return self.model.score(self.x_test, self.y_test)
 
     def save_models(self, model_loc: str = None):
         'save current model'
@@ -53,30 +53,34 @@ class TrainModel:
 
 class UseModel:
     '''Load and use existing models'''
-
     model = None
-
+    
     def __init__(self,
-                 encoded_data: ProcessedData) -> None:
-        self._data = encoded_data.transformed()
+                 encoded_data: ProcessedData,
+                 model_path = None) -> None:
 
-    def load_model(self, model_path):
+        self._data = encoded_data
+        self.model_path = model_path
+
+    def load_model(self):
         'load existing model'
-        self.model = pickle.load(open(model_path, 'rb'))
-        return self
+        self.model = pickle.load(
+            open(f'{self.model_path}/model.pkl', 'rb')
+                 )
 
-    def load_decoder(self, file_path) -> pickle:
+    def load_encoder(self, encoder_path) -> pickle:
         'load decoder to translate back predictions'
-        return pickle.load(filename=file_path)
+        return pickle.load(open(f'{encoder_path}/target_encoder.pkl', 'rb'))
 
     def make_prediction(self) -> np.ndarray:
         'predict using model'
-        return self.model.predict(self.prep_data['feature_data'])
+        self.load_model()
+        return self.model.predict(self._data['feature_data'])
 
     def result(self, decoder_path) -> np.ndarray:
         'translate predicted outputs to previous encoded names'
         pred = self.make_prediction()
-        translator = self.load_decoder(file_path=decoder_path)
-        translate = translator.inverse_transform(pred)
+        encoder = self.load_encoder(encoder_path=decoder_path)
+        decode = encoder.inverse_transform(pred)
 
-        return translate
+        return decode
