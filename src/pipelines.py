@@ -1,6 +1,6 @@
 '''Run the train pipeline or load pipeline'''
 from text_encode import ProcessedData, LoadEncoder, MakeEncoder
-from data_prep import DataCleaner, TrainCSVDataLoader
+from data_loader import DataCleaner, TrainCSVDataLoader
 from model import TrainModel, UseModel
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression

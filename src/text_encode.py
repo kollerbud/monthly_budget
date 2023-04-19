@@ -1,18 +1,18 @@
 '''Encoding text data'''
-from typing import Dict
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pickle
-from data_prep import TrainCSVDataLoader, DataCleaner
+from data_loader import CSVDataLoader, DataCleaner
 
 
-class MakeEncoder:
+class MakeEncoder:  
     '''encode and transform the text data from cleaned data'''
     def __init__(self,
                  clean_data: DataCleaner = None,
                  encoder_path: str = None) -> None:
-        self.path = encoder_path
+        if encoder_path is not None:
+            self.path = encoder_path
         self.clean_data = clean_data
         self.feature_encoder = None
         self.target_encoder = None
@@ -38,26 +38,52 @@ class MakeEncoder:
 
         return category_encode
 
-    def save_encoders(self):
-        'save encoders to model file'
-        pickle.dump(self.feature_encoder,
-                    open(f'{self.path}/desp_encoder.pkl', 'wb')
-                    )
-        pickle.dump(self.target_encoder,
-                    open(f'{self.path}/target_encoder.pkl', 'wb')
-                    )
-        return f'encoders saved to {self.path}'
-
-    def encoded(self) -> np.ndarray:
+    def encoded_data(self) -> np.ndarray:
         'combine encoded and unencoded columns'
+
         feature_data = np.concatenate(
                 (self.descp_encode(), self.columns_to_np()[:, None]), axis=1)
         target_data = self.target_encode()
-        # saved generated encoders
-        self.save_encoders()
         return {'feature_data': feature_data,
                 'target_data': target_data,
                 }
+
+    def save_encoders(self, path):
+        'save encoders to model file'
+        pickle.dump(self.feature_encoder,
+                    open(f'{path}/desp_encoder.pkl', 'wb')
+                    )
+        pickle.dump(self.target_encoder,
+                    open(f'{path}/target_encoder.pkl', 'wb')
+                    )
+        return f'encoders saved to {path}'
+
+class Data_Processor:
+    
+    _encoder = None
+    
+    def __init__(self, loader, cleaner, encoder, encoder_path=None) -> None:
+        self.loader = loader
+        self.cleaner = cleaner
+        self.encoder = encoder
+        self.path = encoder_path
+
+    def run(self):
+        load_data = self.loader.loader_output()
+
+        clean_data = self.cleaner(data_loader=load_data).cleaner_output()
+
+        encoder = self.encoder(clean_data=clean_data, encoder_path=self.path)
+        
+        # Encoder class not running until this step
+        encoded_data = encoder.encoded_data()
+        self._encoder = encoder
+        
+        return encoded_data     
+    
+    def save_encoder(self):
+        self.run()
+        self._encoder.save_encoders(path=self.path)
 
 
 class LoadEncoder:
@@ -67,10 +93,10 @@ class LoadEncoder:
                  encoder_path: str,
                  clean_data: DataCleaner,
                  ) -> None:
-        self.clean_data = clean_data
         self.path = encoder_path
+        self.clean_data = clean_data
         self.feature_encoder = None
-        self.target_encoder = None        
+        self.target_encoder = None
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
@@ -93,8 +119,9 @@ class LoadEncoder:
 
         return category_encode
 
-    def encoded(self) -> np.ndarray:
+    def encoded_data(self) -> np.ndarray:
         'combine encoded and unencoded columns'
+
         feature_data = np.concatenate(
                 (self.descp_encode(), self.columns_to_np()[:, None]), axis=1)
         target_data = self.target_encode()
@@ -102,42 +129,14 @@ class LoadEncoder:
         return {'feature_data': feature_data,
                 'target_data': target_data,
                 }
-
-
-
-class ProcessedData:
-    '''combined pre-modeling steps together'''
-    def __init__(self,
-                 loader,
-                 cleaner,
-                 encoder,
-                 encoder_path: str = None
-                 ) -> None:
-        self.loader = loader
-        self.cleaner = cleaner
-        self.encoder = encoder
-        self.path = encoder_path
-    
-    def run(self) -> Dict[str, np.ndarray]:
-        'output data ready for modeling'
-        load_output = self.loader.loader_output()
-        clean_output = self.cleaner(load_output).cleaner_output()
-        encoded = self.encoder(encoder_path=self.path,
-                               clean_data=clean_output)
-
-        return encoded.encoded()
-
-
 if __name__ == '__main__':
     def run():
-        loader = TrainCSVDataLoader(file_path='raw_data/all_year.csv',
+        loader = CSVDataLoader(file_path='raw_data/all_year.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
                                                 'Zip Code', 'Category'])
-        x = ProcessedData(loader=loader,
-                          cleaner=DataCleaner,
-                          encoder=LoadEncoder,
-                          save_model=False,
-                          encoder_path='saved_models').run()
-        print(x)
+        i = Data_Processor(loader=loader, cleaner=DataCleaner, encoder=LoadEncoder, encoder_path='saved_models')
+        print(i.run())
+        
+
 
     run()

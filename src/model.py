@@ -2,9 +2,7 @@
 import pickle
 import numpy as np
 from sklearn.model_selection import train_test_split
-from text_encode import ProcessedData
-
-
+from text_encode import Data_Processor
 
 class TrainModel:
     '''Use prepared data to train a model'''
@@ -14,7 +12,7 @@ class TrainModel:
     y_test = None
 
     def __init__(self,
-                 encoded_data: ProcessedData,
+                 encoded_data: Data_Processor,
                  model = None) -> None:
 
         self._data = encoded_data
