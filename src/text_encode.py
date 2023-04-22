@@ -6,7 +6,7 @@ import pickle
 from data_loader import CSVDataLoader, DataCleaner
 
 
-class MakeEncoder:  
+class MakeEncoder:
     '''encode and transform the text data from cleaned data'''
     def __init__(self,
                  clean_data: DataCleaner = None,
@@ -59,9 +59,9 @@ class MakeEncoder:
         return f'encoders saved to {path}'
 
 class Data_Processor:
-    
+
     _encoder = None
-    
+
     def __init__(self, loader, cleaner, encoder, encoder_path=None) -> None:
         self.loader = loader
         self.cleaner = cleaner
@@ -74,13 +74,13 @@ class Data_Processor:
         clean_data = self.cleaner(data_loader=load_data).cleaner_output()
 
         encoder = self.encoder(clean_data=clean_data, encoder_path=self.path)
-        
+
         # Encoder class not running until this step
         encoded_data = encoder.encoded_data()
         self._encoder = encoder
-        
-        return encoded_data     
-    
+
+        return encoded_data
+
     def save_encoder(self):
         self.run()
         self._encoder.save_encoders(path=self.path)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
                                                 'Zip Code', 'Category'])
         i = Data_Processor(loader=loader, cleaner=DataCleaner, encoder=LoadEncoder, encoder_path='saved_models')
         print(i.run())
-        
+
 
 
     run()

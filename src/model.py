@@ -18,7 +18,6 @@ class TrainModel:
         self._data = encoded_data
         self.model = model
 
-
     def split(self) -> None:
         'split data into train and test'
         (self.x_train, self.x_test,
@@ -48,13 +47,12 @@ class TrainModel:
         return f'model saved to "{model_loc}"'
 
 
-
 class UseModel:
     '''Load and use existing models'''
     model = None
-    
+
     def __init__(self,
-                 encoded_data: ProcessedData,
+                 encoded_data: Data_Processor,
                  model_path = None) -> None:
 
         self._data = encoded_data
