@@ -60,7 +60,6 @@ class DataCleaner:
     def text_process(self) -> pd.DataFrame:
         '''text processes'''
         
-        
         for col in ['Description', 'City/State']:
             self.data[col] = self.data[col].str.lower()
             self.data[col] = (
