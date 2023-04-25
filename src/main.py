@@ -2,7 +2,10 @@ from flask import Flask, jsonify, request
 from data_loader import JsonDataLoader, DataCleaner
 from text_encode import Data_Processor, LoadEncoder
 from model import UseModel
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 # load raw data
 # prepare and encode feature data
 def prepare_feature(encoder_path):
@@ -10,7 +13,7 @@ def prepare_feature(encoder_path):
 
     loader = JsonDataLoader(file_path=request.get_json(),
                 use_cols=['Description', 'Amount', 'City/State',
-                                  'Zip Code', 'Category'])
+                           'Zip Code', 'Category'])
 
     process_data = Data_Processor(loader=loader,
                         cleaner=DataCleaner,
@@ -43,7 +46,8 @@ def predict_endpoint():
     pred_list = pred.tolist()
 
     result = {
-        'category': pred_list
+        'category': pred_list,
+        'envs': [env for env in os.getenv('project_id')]
     }
 
 

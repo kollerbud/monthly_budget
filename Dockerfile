@@ -1,15 +1,17 @@
 From python:3.8-slim
 
-RUN python -m pip install -U pip
-
 WORKDIR /src
-
 ENV PORT=8080
+
+RUN python -m pip install -U pip
 
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
 COPY ./src ./src
+COPY ./saved_models ./saved_models
 
-CMD [ "python", "run", 'app.py']
+EXPOSE 8080 8080
+
+CMD ["python", "src/main.py"]

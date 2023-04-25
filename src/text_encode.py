@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pickle
-from data_loader import CSVDataLoader, DataCleaner
+from data_loader import DataCleaner
 
 
 class MakeEncoder:
@@ -21,7 +21,8 @@ class MakeEncoder:
         '''encode text columns'''
         # CountVectorizer
         self.feature_encoder = CountVectorizer(encoding='ISO-8859-1')
-        count_matrix = self.feature_encoder.fit_transform(self.clean_data['Description'])
+        count_matrix = self.feature_encoder.fit_transform(
+                                self.clean_data['Description'])
         matrix_array = count_matrix.toarray()
 
         return matrix_array
@@ -34,7 +35,9 @@ class MakeEncoder:
         '''encode target variable'''
         self.target_encoder = LabelEncoder()
         category = self.clean_data['Category'].values
-        category_encode = self.target_encoder.fit_transform(category.reshape(-1, 1).ravel())
+        category_encode = (self.target_encoder
+                           .fit_transform(category.reshape(-1, 1).ravel())
+                           )
 
         return category_encode
 
@@ -47,7 +50,7 @@ class MakeEncoder:
         return {'feature_data': feature_data,
                 'target_data': target_data,
                 }
-
+    
     def save_encoders(self, path):
         'save encoders to model file'
         pickle.dump(self.feature_encoder,
@@ -57,6 +60,7 @@ class MakeEncoder:
                     open(f'{path}/target_encoder.pkl', 'wb')
                     )
         return f'encoders saved to {path}'
+
 
 class Data_Processor:
 
@@ -129,14 +133,3 @@ class LoadEncoder:
         return {'feature_data': feature_data,
                 'target_data': target_data,
                 }
-if __name__ == '__main__':
-    def run():
-        loader = CSVDataLoader(file_path='raw_data/all_year.csv',
-                                    use_cols= ['Description', 'Amount', 'City/State',
-                                                'Zip Code', 'Category'])
-        i = Data_Processor(loader=loader, cleaner=DataCleaner, encoder=LoadEncoder, encoder_path='saved_models')
-        print(i.run())
-
-
-
-    run()

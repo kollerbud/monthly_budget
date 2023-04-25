@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from text_encode import Data_Processor
 
+
 class TrainModel:
     '''Use prepared data to train a model'''
     x_train = None
@@ -13,7 +14,7 @@ class TrainModel:
 
     def __init__(self,
                  encoded_data: Data_Processor,
-                 model = None) -> None:
+                 model=None) -> None:
 
         self._data = encoded_data
         self.model = model
@@ -25,6 +26,7 @@ class TrainModel:
             train_test_split(self._data['feature_data'],
                              self._data['target_data'],
                              train_size=0.75,
+                             stratify=self._data['target_data'],
                              random_state=42)
             )
 
@@ -53,7 +55,7 @@ class UseModel:
 
     def __init__(self,
                  encoded_data: Data_Processor,
-                 model_path = None) -> None:
+                 model_path=None) -> None:
 
         self._data = encoded_data
         self.model_path = model_path

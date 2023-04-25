@@ -29,7 +29,7 @@ class CSVDataLoader:
 
 class JsonDataLoader:
     '''read json data and return dataframe'''
-    
+
     def __init__(self,
                  file_path: str,
                  use_cols: List = None) -> None:
@@ -59,7 +59,7 @@ class DataCleaner:
 
     def text_process(self) -> pd.DataFrame:
         '''text processes'''
-        
+
         for col in ['Description', 'City/State']:
             self.data[col] = self.data[col].str.lower()
             self.data[col] = (
@@ -80,7 +80,6 @@ class DataCleaner:
                 self.data['City/State'])
             ]
         return self.data
-
 
     def clean_category(self) -> None:
         '''drop empty category'''
@@ -105,10 +104,10 @@ class DataCleaner:
 
 if __name__ == '__main__':
     def run():
-        loader = JsonDataLoader(file_path='raw_data/act_feb.json',
+        loader = CSVDataLoader(file_path='raw_data/activity_feb.csv',
                                     use_cols= ['Description', 'Amount', 'City/State',
                                             'Zip Code', 'Category']).loader_output()
-           
+
         text_processor = DataCleaner(data_loader=loader).cleaner_output()
-        
+
     run()
