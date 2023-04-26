@@ -1,8 +1,9 @@
 '''Encoding text data'''
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
+from data_upload import LoadFromBucket
 import numpy as np
-import pickle
+import joblib
 from data_loader import DataCleaner
 
 
@@ -49,16 +50,16 @@ class MakeEncoder:
         target_data = self.target_encode()
         return {'feature_data': feature_data,
                 'target_data': target_data,
+                'encoders': (self.feature_encoder,
+                             self.target_encoder)
                 }
-    
+
     def save_encoders(self, path):
         'save encoders to model file'
-        pickle.dump(self.feature_encoder,
-                    open(f'{path}/desp_encoder.pkl', 'wb')
-                    )
-        pickle.dump(self.target_encoder,
-                    open(f'{path}/target_encoder.pkl', 'wb')
-                    )
+        joblib.dump(self.feature_encoder,
+                    f'{path}/desp_encoder.pkl')
+        joblib.dump(self.target_encoder,
+                    f'{path}/target_encoder.pkl')
         return f'encoders saved to {path}'
 
 
@@ -90,7 +91,7 @@ class Data_Processor:
         self._encoder.save_encoders(path=self.path)
 
 
-class LoadEncoder:
+class LoadEncoderFromBucket:
     '''load trained encoders'''
 
     def __init__(self,
@@ -102,10 +103,18 @@ class LoadEncoder:
         self.feature_encoder = None
         self.target_encoder = None
 
+    def load_vectorizer(self):
+        vec = LoadFromBucket().load_vector_from_bucket(
+            bucket_name='monthly_budget_models',
+            model_blob=self.path
+        )
+
+        return vec
+
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
         # load CountVectorizer
-        count_vec = pickle.load(open(f'{self.path}/desp_encoder.pkl', 'rb'))
+        count_vec = joblib.load(self.load_vectorizer())[0]
         count_matrix = count_vec.transform(self.clean_data['Description'])
         matrix_array = count_matrix.toarray()
 
@@ -117,7 +126,7 @@ class LoadEncoder:
 
     def target_encode(self) -> np.ndarray:
         '''encode target variable'''
-        encode = pickle.load(open(f'{self.path}/target_encoder.pkl', 'rb'))
+        encode = joblib.load(self.load_vectorizer())[1]
         category = self.clean_data['Category'].values
         category_encode = encode.transform(category.reshape(-1, 1).ravel())
 
@@ -133,3 +142,9 @@ class LoadEncoder:
         return {'feature_data': feature_data,
                 'target_data': target_data,
                 }
+
+
+class LoadEncoderFromLocal:
+
+    def __init__(self) -> None:
+        pass

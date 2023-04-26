@@ -39,6 +39,7 @@ run_info
 *.xlsx
 *.joblib
 cloud-sql-proxy
+*.db
 
 share/
 include/

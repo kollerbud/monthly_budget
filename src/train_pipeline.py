@@ -1,7 +1,7 @@
 # using ml flow to train model
 '''Run the train pipeline or load pipeline'''
 import mlflow
-from data_upload import UploadToBucket
+from data_upload import MLFlowToBucket
 from text_encode import Data_Processor, MakeEncoder
 from data_loader import DataCleaner, CSVDataLoader
 from model import TrainModel
@@ -27,7 +27,6 @@ def train_pipeline(raw_file_path: str):
                       encoder_path='saved_models')
 
     processor_data = data_processor.run()
-    #data_processor.save_encoder()
     with mlflow.start_run():
 
         params = {'n_estimators': 300,
@@ -39,10 +38,19 @@ def train_pipeline(raw_file_path: str):
         use_model = RandomForestClassifier(**params)
         m = TrainModel(encoded_data=processor_data, model=use_model)
         m.train_model()
-        mlflow.log_param('accuracy score' , m.score())
+        mlflow.log_param('accuracy score', m.score())
         mlflow.sklearn.log_model(use_model, artifact_path='budget')
-        UploadToBucket().upload_files(
-            path='mlruns/1/23c98085d10d4e8897d48c352d3a71df/artifacts/budget',
-            bucket_name='monthly_budget_models')
 
-train_pipeline('raw_data/all_year.csv')
+        mlflow.sklearn.log_model(processor_data['encoders'],
+                        artifact_path='vectorizer')
+
+        mlflow.end_run()
+
+def save_to_bucket(local_path):
+
+    MLFlowToBucket().upload_files(
+        path=local_path,
+        bucket_name='monthly_budget_models')
+
+#train_pipeline('raw_data/all_year.csv')
+save_to_bucket(local_path='mlruns/1/684f7cf6eef84b3b8e46dbef8e8b39a8')

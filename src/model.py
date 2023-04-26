@@ -1,8 +1,9 @@
 'Modeling and metrics here'
-import pickle
+import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
 from text_encode import Data_Processor
+from data_upload import LoadFromBucket
 
 
 class TrainModel:
@@ -43,13 +44,11 @@ class TrainModel:
 
     def save_models(self, model_loc: str = None):
         'save current model'
-        pickle.dump(self.model,
-                    open(f'{model_loc}/model.pkl', 'wb')
-                    )
+        joblib.dump(self.model, f'{model_loc}/model.pkl')
         return f'model saved to "{model_loc}"'
 
 
-class UseModel:
+class LoadModelFromBucket:
     '''Load and use existing models'''
     model = None
 
@@ -60,15 +59,24 @@ class UseModel:
         self._data = encoded_data
         self.model_path = model_path
 
+    def load_bucket_model(self):
+        mod = LoadFromBucket().load_model_from_bucket(
+            bucket_name='monthly_budget_models',
+            model_blob=self.model_path
+        )
+        return mod
+
     def load_model(self):
         'load existing model'
-        self.model = pickle.load(
-            open(f'{self.model_path}/model.pkl', 'rb')
-                 )
+        self.model = joblib.load(self.load_bucket_model())
 
-    def load_encoder(self, encoder_path) -> pickle:
+    def load_encoder(self):
         'load decoder to translate back predictions'
-        return pickle.load(open(f'{encoder_path}/target_encoder.pkl', 'rb'))
+        decoder = LoadFromBucket().load_vector_from_bucket(
+            bucket_name='monthly_budget_models',
+            model_blob=self.model_path
+        )
+        return joblib.load(decoder)[1]
 
     def make_prediction(self) -> np.ndarray:
         'predict using model'
@@ -78,7 +86,7 @@ class UseModel:
     def result(self, decoder_path) -> np.ndarray:
         'translate predicted outputs to previous encoded names'
         pred = self.make_prediction()
-        encoder = self.load_encoder(encoder_path=decoder_path)
+        encoder = self.load_encoder()
         decode = encoder.inverse_transform(pred)
 
         return decode

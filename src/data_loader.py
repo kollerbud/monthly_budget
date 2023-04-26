@@ -100,14 +100,3 @@ class DataCleaner:
         if self.data is None:
             raise ValueError('No data has been processed')
         return self.data
-
-
-if __name__ == '__main__':
-    def run():
-        loader = CSVDataLoader(file_path='raw_data/activity_feb.csv',
-                                    use_cols= ['Description', 'Amount', 'City/State',
-                                            'Zip Code', 'Category']).loader_output()
-
-        text_processor = DataCleaner(data_loader=loader).cleaner_output()
-
-    run()

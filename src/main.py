@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from data_loader import JsonDataLoader, DataCleaner
-from text_encode import Data_Processor, LoadEncoder
-from model import UseModel
+from text_encode import Data_Processor, LoadEncoderFromBucket
+from model import LoadModelFromBucket
 from dotenv import load_dotenv
 import os
 
@@ -17,7 +17,7 @@ def prepare_feature(encoder_path):
 
     process_data = Data_Processor(loader=loader,
                         cleaner=DataCleaner,
-                        encoder=LoadEncoder,
+                        encoder=LoadEncoderFromBucket,
                         encoder_path=encoder_path)
 
     return process_data.run()
@@ -25,11 +25,15 @@ def prepare_feature(encoder_path):
 # make prediction
 def predict(feature_data, model_path, decoder_path):
 
-    model = UseModel(feature_data, model_path=model_path)
+    model = LoadModelFromBucket(feature_data, model_path=model_path)
     model.make_prediction()
     result = model.result(decoder_path=decoder_path)
 
     return result
+
+# model path
+
+model_path = 'mlruns/1/684f7cf6eef84b3b8e46dbef8e8b39a8'
 
 app = Flask('budget category prediction')
 
@@ -37,11 +41,11 @@ app = Flask('budget category prediction')
 @app.route('/predict', methods=['GET'])
 def predict_endpoint():
 
-    features = prepare_feature(encoder_path='saved_models')
+    features = prepare_feature(encoder_path=model_path)
 
     pred = predict(feature_data=features,
-                   model_path='saved_models',
-                   decoder_path='saved_models')
+                   model_path=model_path,
+                   decoder_path=model_path)
 
     pred_list = pred.tolist()
 
@@ -49,7 +53,6 @@ def predict_endpoint():
         'category': pred_list,
         'envs': [env for env in os.getenv('project_id')]
     }
-
 
     return jsonify(result)
 

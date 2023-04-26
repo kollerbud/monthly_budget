@@ -3,12 +3,14 @@ from google.oauth2 import service_account
 from dotenv import load_dotenv
 import os
 from io import BytesIO
+import joblib
 
 
 load_dotenv()
 
 
-class UploadToBucket:
+class MLFlowToBucket:
+    '''specific to local mlflow development'''
 
     def __init__(self) -> None:
         self.storage_client = self.client_detail()
@@ -26,19 +28,27 @@ class UploadToBucket:
         return storage.Client(credentials=cred)
 
     def upload_files(self, path: str,
-                     bucket_name: str,
-                     #dest_blob: str
+                     bucket_name: str
                      ):
-        # bucket
         bucket = self.storage_client.get_bucket(bucket_name)
-        _files = [filename for filename in os.listdir(path)]
+        # full path
+        model_path = path + '/artifacts/budget'
+        model_files = [filename for filename in
+                       os.listdir(model_path)]
 
-        for file in _files:
+        for file in model_files:
             # blob is destination folder structure
-            blob = bucket.blob(path+'/'+file)
-            blob.upload_from_filename(path+'/'+file)
+            blob = bucket.blob(model_path+'/' + file)
+            blob.upload_from_filename(model_path+'/'+file)
 
-            print(blob.public_url)
+        vector_path = path + '/artifacts/vectorizer'
+        vector_files = [filename for filename in
+                        os.listdir(vector_path)]
+
+        for file in vector_files:
+            # blob is destination folder structure
+            blob = bucket.blob(vector_path+'/' + file)
+            blob.upload_from_filename(vector_path+'/'+file)
 
 
 class LoadFromBucket:
@@ -58,22 +68,33 @@ class LoadFromBucket:
         # role permission issue
         return storage.Client(credentials=cred)
 
-    def load_file_from_bucket(self, bucket_name, model_blob):
+    def load_vector_from_bucket(self, bucket_name, model_blob):
         bucket = self.storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(model_blob)
-        
+
+        blob_path = model_blob + '/artifacts/vectorizer/model.pkl'
+
+        blob = bucket.blob(blob_path)
+
+        a = blob.download_as_bytes()
+
+        return BytesIO(a)
+
+    def load_model_from_bucket(self, bucket_name, model_blob):
+        bucket = self.storage_client.get_bucket(bucket_name)
+
+        blob_path = model_blob + '/artifacts/budget/model.pkl'
+
+        blob = bucket.blob(blob_path)
+
         a = blob.download_as_bytes()
 
         return BytesIO(a)
 
 
-
 if __name__ == '__main__':
 
-    x = LoadFromBucket().load_file_from_bucket(bucket_name='monthly_budget_models',
-                        model_blob='mlruns/1/23c98085d10d4e8897d48c352d3a71df/artifacts/budget/model.pkl'
-                        )
-    import joblib
-    
-    print(joblib.load(x))
-    
+    i = LoadFromBucket().load_file_from_bucket(
+        bucket_name='monthly_budget_models',
+        model_blob='mlruns/1/684f7cf6eef84b3b8e46dbef8e8b39a8'
+    )
+    print(joblib.load(i)[0])
