@@ -2,6 +2,7 @@ From python:3.8-slim
 
 WORKDIR /src
 ENV PORT=8080
+COPY ./src ./src
 
 ENV PYTHONUNBUFFERED True
 
@@ -15,4 +16,4 @@ COPY ./src ./src
 
 EXPOSE 8080
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 deploy:app
+CMD ["/usr/local/bin/gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "-t", "30", "--pythonpath", "./src", "deploy:app"]

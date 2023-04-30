@@ -28,7 +28,7 @@ def run(runs_path: str, data):
 
 
 # build Flask app
-app = Flask('budget category prediction')
+app = Flask(__name__)
 
 @app.route('/predict', methods=['GET'])
 def predict_endpoint():
