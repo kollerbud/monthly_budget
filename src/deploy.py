@@ -30,7 +30,7 @@ def run(runs_path: str, data):
 # build Flask app
 app = Flask(__name__)
 
-@app.route('/predict', methods=['GET'])
+@app.route('/predict', methods=['GET', 'POST'])
 def predict_endpoint():
     'run prediction endpoint'
     data_package = request.get_json()
