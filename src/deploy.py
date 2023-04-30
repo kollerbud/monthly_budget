@@ -36,6 +36,7 @@ def predict_endpoint():
     data_package = request.get_json()
     data_package_js = json.loads(data_package)
 
+
     pred_result = run(runs_path=data_package_js['ml_path'],
                       data=data_package_js['data'])
 
@@ -47,5 +48,5 @@ def predict_endpoint():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(port=int(os.environ.get("PORT", 8080)),
+    app.run(port=int(os.environ.get('PORT', 8080)),
             debug=False, host='0.0.0.0')
