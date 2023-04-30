@@ -12,3 +12,5 @@ base="dark"
 [server]
 enableCORS = false
 enableXsrfProtection = false
+
+

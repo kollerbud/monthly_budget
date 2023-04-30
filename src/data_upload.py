@@ -13,6 +13,9 @@ class MLFlowToBucket:
     '''specific to local mlflow development'''
 
     def __init__(self) -> None:
+        if os.getenv('private_key') is None:
+            self.storage_client = storage.Client()
+
         self.storage_client = self.client_detail()
 
     def client_detail(self):
@@ -54,6 +57,8 @@ class MLFlowToBucket:
 class LoadFromBucket:
     '''load model from Bucket'''
     def __init__(self) -> None:
+        if os.getenv('private_key') is None:
+            self.storage_client = storage.Client()
         self.storage_client = self.client_detail()
 
     def client_detail(self):
@@ -92,9 +97,5 @@ class LoadFromBucket:
 
 
 if __name__ == '__main__':
-
-    i = LoadFromBucket().load_file_from_bucket(
-        bucket_name='monthly_budget_models',
-        model_blob='mlruns/1/684f7cf6eef84b3b8e46dbef8e8b39a8'
-    )
-    print(joblib.load(i)[0])
+    load_dotenv()
+    MLFlowToBucket()

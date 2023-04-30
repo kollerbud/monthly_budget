@@ -18,8 +18,11 @@ with st.sidebar:
         else:
             print('not in the file type')
 
-# sending "data" to cloud run
-send_data = data.to_json()
-url = 'http://127.0.0.1:8080/predict'
+        send_data = data.to_json()
+        url = 'http://127.0.0.1:8080/predict'
 
-response = requests.get(url, json=send_data)
+        response = requests.get(url, json=send_data)
+        st.write('running')
+        st.write(response.json())
+# sending "data" to cloud run
+

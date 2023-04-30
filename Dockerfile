@@ -10,8 +10,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY ./src ./src
-COPY ./saved_models ./saved_models
 
 EXPOSE 8080 8080
 
-CMD ["python", "src/main.py"]
+CMD ["python", "src/deploy.py"]

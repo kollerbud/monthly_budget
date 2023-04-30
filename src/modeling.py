@@ -1,8 +1,9 @@
 'Modeling and metrics here'
+from typing import Type
 import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
-from text_encode import Data_Processor
+from encoding import MakeDataEncoder
 from data_upload import LoadFromBucket
 
 
@@ -14,7 +15,7 @@ class TrainModel:
     y_test = None
 
     def __init__(self,
-                 encoded_data: Data_Processor,
+                 encoded_data: Type[MakeDataEncoder],
                  model=None) -> None:
 
         self._data = encoded_data
@@ -53,7 +54,7 @@ class LoadModelFromBucket:
     model = None
 
     def __init__(self,
-                 encoded_data: Data_Processor,
+                 encoded_data: Type[MakeDataEncoder],
                  model_path=None) -> None:
 
         self._data = encoded_data
@@ -83,7 +84,7 @@ class LoadModelFromBucket:
         self.load_model()
         return self.model.predict(self._data['feature_data'])
 
-    def result(self, decoder_path) -> np.ndarray:
+    def result(self) -> np.ndarray:
         'translate predicted outputs to previous encoded names'
         pred = self.make_prediction()
         encoder = self.load_encoder()

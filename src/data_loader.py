@@ -1,5 +1,5 @@
 '''Loading and preprocessing raw data'''
-from typing import List
+from typing import List, Type
 import pandas as pd
 
 
@@ -8,23 +8,41 @@ class CSVDataLoader:
 
     def __init__(self,
                  file_path: str,
-                 use_cols: List = None) -> None:
+                 cols: List[str] = None) -> None:
         self.path = file_path
-        self.to_dataframe()
-        if use_cols is not None:
-            self.cols = use_cols
+        self.cols = cols
+        self._data = None
+
+    def _req_columns_check(self):
+        '''check if all required columns are in dataframe'''
+        req_cols = ['Description', 'Amount', 'City/State',
+                    'Zip Code', 'Category']
+
+        if all(elem in self._data.columns for elem in req_cols):
+            return True
+        else:
+            return False
 
     def to_dataframe(self) -> pd.DataFrame:
         'read the csv file to a dataframe'
-        return pd.read_csv(self.path, encoding='ISO-8859-1')
+        self._data = pd.read_csv(self.path, encoding='ISO-8859-1')
 
     def select_cols(self) -> pd.DataFrame:
         '''select the columns to use from dataframe'''
-        return self.to_dataframe().loc[:, self.cols]
+        self.to_dataframe()
+        self._data = self._data.loc[:, self.cols]
 
     def loader_output(self) -> pd.DataFrame:
-        '''return the trimmed dataframe'''
-        return self.select_cols()
+        'run all loading steps and perform data checks'
+        self.to_dataframe()
+        self.select_cols()
+
+        if self._data is None:
+            raise ValueError('data is none')
+
+        if self._req_columns_check() is False:
+            raise ValueError('not all required columns are loaded')
+        return self._data
 
 
 class JsonDataLoader:
@@ -32,29 +50,46 @@ class JsonDataLoader:
 
     def __init__(self,
                  file_path: str,
-                 use_cols: List = None) -> None:
+                 cols: List[str] = None) -> None:
         self.path = file_path
-        self.to_dataframe()
-        if use_cols is not None:
-            self.cols = use_cols
+        self.cols = cols
+        self._data = None
+
+    def _req_columns_check(self):
+        '''check if all required columns are in dataframe'''
+        req_cols = ['Description', 'Amount', 'City/State',
+                    'Zip Code', 'Category']
+
+        if all(elem in self._data.columns for elem in req_cols):
+            return True
+        else:
+            return False
 
     def to_dataframe(self) -> pd.DataFrame:
         'read the csv file to a dataframe'
-        return pd.read_json(self.path)
+        self._data = pd.read_json(self.path, encoding='ISO-8859-1')
 
     def select_cols(self) -> pd.DataFrame:
         '''select the columns to use from dataframe'''
-        return self.to_dataframe().loc[:, self.cols]
+        return self._data.loc[:, self.cols]
 
     def loader_output(self) -> pd.DataFrame:
-        '''return the trimmed dataframe'''
-        return self.select_cols()
+        'run all loading steps and perform data checks'
+        self.to_dataframe()
+        self.select_cols()
+
+        if self._data is None:
+            raise ValueError('data is none')
+
+        if self._req_columns_check() is False:
+            raise ValueError('not all required columns are loaded')
+        return self._data
 
 
 class DataCleaner:
     '''data processing steps for data from DataLoader'''
 
-    def __init__(self, data_loader) -> None:
+    def __init__(self, data_loader: Type[CSVDataLoader]) -> None:
         self.data = data_loader
 
     def text_process(self) -> pd.DataFrame:
