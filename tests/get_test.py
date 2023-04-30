@@ -12,10 +12,10 @@ data_package = {'data': new_act_json, 'ml_path': ml_repo_path}
 
 data_package_json = json.dumps(data_package)
 
-url = 'http://127.0.0.1:8080/predict'
-#new_url = 'https://monthly-budget-owyxadjwpa-uc.a.run.app:8080/predict'
+#url = 'http://127.0.0.1:8080/predict'
+new_url = 'https://monthly-budget-owyxadjwpa-uc.a.run.app:8080/predict'
 
-response = requests.get(url, json=data_package_json)
+response = requests.get(new_url, json=data_package_json)
 
 print(response.status_code)
 print(response.json())
