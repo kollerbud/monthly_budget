@@ -16,5 +16,6 @@ COPY ./src ./src
 
 EXPOSE 8080
 
-#CMD ["/usr/local/bin/gunicorn", "-w", "4", "-b", "0.0.0.0:", "-t", "30", "--pythonpath", "./src", "deploy:app"]
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 deploy:app  --pythonpath ./src
+
+#CMD exec python src/deploy.py --pythonpath ./src

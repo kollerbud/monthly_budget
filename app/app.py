@@ -19,7 +19,9 @@ with st.sidebar:
             print('not in the file type')
 
         send_data = data.to_json()
-        url = 'http://127.0.0.1:8080/predict'
+        
+        url = st.text_input('prediction model app link')
+        
 
         response = requests.get(url, json=send_data)
         st.write('running')
