@@ -1,9 +1,8 @@
+import os
+from io import BytesIO
 from google.cloud import storage
 from google.oauth2 import service_account
 from dotenv import load_dotenv
-import os
-from io import BytesIO
-import joblib
 
 
 load_dotenv()

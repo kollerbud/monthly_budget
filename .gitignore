@@ -40,6 +40,7 @@ run_info
 *.joblib
 cloud-sql-proxy
 *.db
+mlruns/*
 
 share/
 include/

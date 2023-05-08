@@ -1,6 +1,9 @@
 '''Loading and preprocessing raw data'''
 from typing import List, Type
+import os
 import pandas as pd
+from google.cloud import bigquery
+from google.oauth2 import service_account
 
 
 class CSVDataLoader:
@@ -85,6 +88,63 @@ class JsonDataLoader:
             raise ValueError('not all required columns are loaded')
         return self._data
 
+
+class BigqueryDataLoader:
+    '''read json data and return dataframe'''
+
+    def __init__(self,
+                 file_path: str,
+                 cols: List[str] = None) -> None:
+        self._client_detail()
+
+    def _client_detail(self):
+        secrets = {}
+        for i in ['type', 'project_id', 'private_key_id',
+                  'client_email', 'client_id', 'auth_uri', 'token_uri',
+                  'auth_provider_x509_cert_url', 'client_x509_cert_url']:
+            secrets[i] = os.getenv(i)
+            # need to clean up private_key
+        secrets['private_key'] = os.getenv('private_key').replace('\\n', '\n')
+        cred = service_account.Credentials.from_service_account_info(secrets)
+        return bigquery.Client(credentials=cred)
+    
+    def build_query(self):
+        '''file path should be the table'''
+        query_string = '''
+            SELECT @columns
+            FROM @bq_path
+            WHERE 
+        '''
+
+    def _req_columns_check(self):
+        '''check if all required columns are in dataframe'''
+        req_cols = ['Description', 'Amount', 'City/State',
+                    'Zip Code', 'Category']
+
+        if all(elem in self._data.columns for elem in req_cols):
+            return True
+        else:
+            return False
+
+    def to_dataframe(self) -> pd.DataFrame:
+        'read the csv file to a dataframe'
+        self._data = pd.read_json(self.path, encoding='ISO-8859-1')
+
+    def select_cols(self) -> pd.DataFrame:
+        '''select the columns to use from dataframe'''
+        return self._data.loc[:, self.cols]
+
+    def loader_output(self) -> pd.DataFrame:
+        'run all loading steps and perform data checks'
+        self.to_dataframe()
+        self.select_cols()
+
+        if self._data is None:
+            raise ValueError('data is none')
+
+        if self._req_columns_check() is False:
+            raise ValueError('not all required columns are loaded')
+        return self._data
 
 class DataCleaner:
     '''data processing steps for data from DataLoader'''
