@@ -30,6 +30,6 @@ def test_deployed(url):
     print(response.json())
 
 
-#test_local('http://127.0.0.1:8080/predict')
-clour_run_url = os.getenv('deploy_site')
-test_deployed(clour_run_url)
+test_local('http://127.0.0.1:8080/predict')
+#clour_run_url = os.getenv('deploy_site')
+#test_deployed(clour_run_url)
