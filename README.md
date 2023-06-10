@@ -6,9 +6,9 @@ I want to create an web app to turn my bank statement into spend analysis
     <img alt="Version" src="https://img.shields.io/badge/Project Number-2-orange.svg?cacheSeconds=2592000" />
 </div>
 
-streamlit App for spend analysis & interaction [App](https://kollerbud-monthly-budget-appapp-jm4kbr.streamlit.app/)
+streamlit App for spend analysis & interaction [App](https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/)
 
-App url : <https://kollerbud-monthly-budget-appapp-jm4kbr.streamlit.app/>
+App url : <https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/>
 
 ## Data Pipeline
 * Train:
