@@ -4,6 +4,10 @@ import os
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 class CSVDataLoader:
@@ -93,7 +97,7 @@ class BigqueryDataLoader:
     '''read json data and return dataframe'''
 
     def __init__(self,
-                 file_path: str,
+                 file_path: str = None,
                  cols: List[str] = None) -> None:
         self._client_detail()
 
@@ -107,14 +111,6 @@ class BigqueryDataLoader:
         secrets['private_key'] = os.getenv('private_key').replace('\\n', '\n')
         cred = service_account.Credentials.from_service_account_info(secrets)
         return bigquery.Client(credentials=cred)
-    
-    def build_query(self):
-        '''file path should be the table'''
-        query_string = '''
-            SELECT @columns
-            FROM @bq_path
-            WHERE 
-        '''
 
     def _req_columns_check(self):
         '''check if all required columns are in dataframe'''
@@ -145,6 +141,7 @@ class BigqueryDataLoader:
         if self._req_columns_check() is False:
             raise ValueError('not all required columns are loaded')
         return self._data
+
 
 class DataCleaner:
     '''data processing steps for data from DataLoader'''
@@ -195,3 +192,7 @@ class DataCleaner:
         if self.data is None:
             raise ValueError('No data has been processed')
         return self.data
+
+
+if __name__ == '__main__':
+    BigqueryDataLoader()._client_detail()

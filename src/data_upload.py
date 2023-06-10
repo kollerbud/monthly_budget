@@ -97,4 +97,4 @@ class LoadFromBucket:
 
 if __name__ == '__main__':
     load_dotenv()
-    MLFlowToBucket()
+    LoadFromBucket().client_detail()

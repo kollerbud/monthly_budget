@@ -3,6 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
 
@@ -15,6 +16,7 @@ def test_local(url):
 
     response = requests.post(url, json=new_act_json)
     print(response.status_code)
+    print(response.json())
 
 
 def test_deployed(url):
@@ -25,11 +27,11 @@ def test_deployed(url):
     new_act_json = new_act.to_json()
 
     response = requests.post(url=url, json=new_act_json, timeout=60)
+    print(response.content)
 
     print(response.status_code)
     print(response.json())
 
 
 test_local('http://127.0.0.1:8080/predict')
-#clour_run_url = os.getenv('deploy_site')
-#test_deployed(clour_run_url)
+#test_deployed(os.getenv('cloudRunURL')+'/predict')

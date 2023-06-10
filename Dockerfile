@@ -10,7 +10,7 @@ RUN python -m pip install -U pip
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade --no-cache-dir -r requirements.txt
 
 COPY ./src ./src
 

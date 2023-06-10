@@ -6,7 +6,6 @@ from encoding import LoadEncoderFromBucket
 from modeling import LoadModelFromBucket
 from data_loader import JsonDataLoader, DataCleaner
 
-
 load_dotenv()
 
 

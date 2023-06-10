@@ -6,7 +6,6 @@ from encoding import MakeDataEncoder
 from data_loader import DataCleaner, CSVDataLoader
 from modeling import TrainModel
 from sklearn.ensemble import RandomForestClassifier
-#from lightgbm import LGBMClassifier
 
 
 # tracking info will be local, cloudsql is somewhat costly
@@ -26,11 +25,10 @@ def train_pipeline(raw_file_path: str):
 
     with mlflow.start_run():
 
-        params = {
-                 'n_estimators': 1000,
+        params = {'n_estimators': 1000,
                   'n_jobs': 6,
                   'random_state': 2,
-                 }
+                  }
         mlflow.log_params(params)
 
         use_model = RandomForestClassifier(**params)
@@ -40,9 +38,10 @@ def train_pipeline(raw_file_path: str):
         mlflow.sklearn.log_model(use_model, artifact_path='budget')
 
         mlflow.sklearn.log_model(encoder['encoders'],
-                        artifact_path='vectorizer')
+                                 artifact_path='vectorizer')
 
         mlflow.end_run()
+
 
 def save_to_bucket(local_path):
 
@@ -50,9 +49,11 @@ def save_to_bucket(local_path):
         path=local_path,
         bucket_name='monthly_budget_models')
 
+
 def load_pipeline():
 
     return None
 
-#train_pipeline('raw_data/activity_all.csv')
+
+# train_pipeline('raw_data/activity_all.csv')
 save_to_bucket(local_path='mlruns/1/dee7cad0a1e84a3cbe65d29503d74faa')
