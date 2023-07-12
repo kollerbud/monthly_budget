@@ -120,10 +120,10 @@ if Side_bar_ran:
                            yaxis_tickangle=0, barmode='stack',
                            yaxis={'categoryorder':'total ascending'})
     st.plotly_chart(top5_fig, use_container_width=False)
-    
+
     # current month spend dataframe
     st.dataframe(df_current)
-    
+
     # prediction accuracy
 
     # last 2 months and current spend comparisons
