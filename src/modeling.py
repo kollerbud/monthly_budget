@@ -3,8 +3,9 @@ from typing import Type
 import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import RandomOverSampler
 from encoding import MakeDataEncoder
-from data_upload import LoadFromBucket
+from bucket_download import LoadFromBucket
 
 
 class TrainModel:
@@ -21,14 +22,27 @@ class TrainModel:
         self._data = encoded_data
         self.model = model
 
+    def over_sample(self):
+        '''balance income data'''
+        overSampler = RandomOverSampler(random_state=21)
+
+        (x_resample, y_resample) = (overSampler.fit_resample(
+                                        self._data['feature_data'],
+                                        self._data['target_data']
+                                        )
+                                    )
+
+        return x_resample, y_resample
+
     def split(self) -> None:
+        # resample to get balanced data
+        x, y = self.over_sample()
         'split data into train and test'
         (self.x_train, self.x_test,
          self.y_train, self.y_test) = (
-            train_test_split(self._data['feature_data'],
-                             self._data['target_data'],
+            train_test_split(x, y,
                              train_size=0.75,
-                             stratify=self._data['target_data'],
+                             stratify=y,
                              random_state=42)
             )
 
@@ -52,42 +66,50 @@ class TrainModel:
 class LoadModelFromBucket:
     '''Load and use existing models'''
     model = None
+    target_encoder = None
 
     def __init__(self,
-                 encoded_data: Type[MakeDataEncoder],
-                 model_path=None) -> None:
+                 encoded_data: Type[MakeDataEncoder]=None
+                 ) -> None:
 
         self._data = encoded_data
-        self.model_path = model_path
 
-    def load_bucket_model(self):
-        mod = LoadFromBucket().load_model_from_bucket(
-            bucket_name='monthly_budget_models',
-            model_blob=self.model_path
+    def load_bucket_model(self,
+                          bucket_name: str,
+                          model_name: str):
+        mod = LoadFromBucket().load_from_uri(
+            file_bucket=bucket_name,
+            file_name=model_name
         )
-        return mod
+        self.model = joblib.load(mod)
+        return self
 
-    def load_model(self):
-        'load existing model'
-        self.model = joblib.load(self.load_bucket_model())
-
-    def load_encoder(self):
-        'load decoder to translate back predictions'
-        decoder = LoadFromBucket().load_vector_from_bucket(
-            bucket_name='monthly_budget_models',
-            model_blob=self.model_path
+    def load_target_encoder(
+            self,
+            bucket_name: str,
+            encoder_name: str,
+            ):
+        'load saved vectorizer from gcp bucket'
+        vec = LoadFromBucket().load_from_uri(
+            file_bucket=bucket_name,
+            file_name=encoder_name
         )
-        return joblib.load(decoder)[1]
+        self.target_encoder = joblib.load(vec)
+        return self
 
     def make_prediction(self) -> np.ndarray:
         'predict using model'
-        self.load_model()
+
         return self.model.predict(self._data['feature_data'])
 
     def result(self) -> np.ndarray:
-        'translate predicted outputs to previous encoded names'
+        # check model and encoder loading
+        if self.model is None:
+            raise ValueError('model is not loaded')
+        if self.target_encoder is None:
+            raise ValueError('encoder is not loaded')
+        # translate predicted outputs to previous encoded names
         pred = self.make_prediction()
-        encoder = self.load_encoder()
-        decode = encoder.inverse_transform(pred)
+        decode = self.target_encoder.inverse_transform(pred)
 
         return decode

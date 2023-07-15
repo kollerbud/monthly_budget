@@ -1,8 +1,10 @@
 import sys
-sys.path += ['../monthly_budget', '../monthly_budget/src']
+from pathlib import Path
+sys.path += [str(Path(__file__).parents[1])
+             ]
 from src.data_loader import CSVDataLoader, DataCleaner
 from src.encoding import LoadEncoderFromBucket
-from modeling import LoadModelFromBucket
+from src.modeling import LoadModelFromBucket
 
 
 def load_deployed_test():
@@ -13,9 +15,6 @@ def load_deployed_test():
                       'Zip Code', 'Category']).loader_output()
     data_cleaner = DataCleaner(data_loader=loader_data).cleaner_output()
 
-    # pick which runs to use
-    runs_path = 'mlruns/1/684f7cf6eef84b3b8e46dbef8e8b39a8'
-
     encoder = LoadEncoderFromBucket(clean_data=data_cleaner,
                 path=runs_path).encoded_data()
 
@@ -23,5 +22,3 @@ def load_deployed_test():
                 model_path=runs_path)
 
     return model.result()
-
-print(load_deployed_test())

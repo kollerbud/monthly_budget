@@ -1,10 +1,10 @@
 '''Loading and preprocessing raw data'''
 from typing import List, Type
-import os
 import pandas as pd
 from google.cloud import bigquery
-from google.oauth2 import service_account
+from google.api_core.client_options import ClientOptions
 from dotenv import load_dotenv
+from _auth import credentials
 
 
 load_dotenv()
@@ -97,49 +97,48 @@ class BigqueryDataLoader:
     '''read json data and return dataframe'''
 
     def __init__(self,
-                 file_path: str = None,
-                 cols: List[str] = None) -> None:
-        self._client_detail()
+                 months: int = 12) -> None:
 
-    def _client_detail(self):
-        secrets = {}
-        for i in ['type', 'project_id', 'private_key_id',
-                  'client_email', 'client_id', 'auth_uri', 'token_uri',
-                  'auth_provider_x509_cert_url', 'client_x509_cert_url']:
-            secrets[i] = os.getenv(i)
-            # need to clean up private_key
-        secrets['private_key'] = os.getenv('private_key').replace('\\n', '\n')
-        cred = service_account.Credentials.from_service_account_info(secrets)
-        return bigquery.Client(credentials=cred)
+        self.client = self._client_detail()
+        self._data = None
+        self.months = months
 
-    def _req_columns_check(self):
-        '''check if all required columns are in dataframe'''
-        req_cols = ['Description', 'Amount', 'City/State',
-                    'Zip Code', 'Category']
+    @staticmethod
+    def _client_detail():
+        # permission issue with Bigquery using sheets as backend
+        # detail-- https://github.com/googleapis/google-auth-library-python/issues/1204
+        options = ClientOptions(
+                    scopes=['https://www.googleapis.com/auth/drive',
+                            'https://www.googleapis.com/auth/cloud-platform']
+                    )
+        return bigquery.Client(credentials=credentials(),
+                               client_options=options)
 
-        if all(elem in self._data.columns for elem in req_cols):
-            return True
-        else:
-            return False
-
-    def to_dataframe(self) -> pd.DataFrame:
-        'read the csv file to a dataframe'
-        self._data = pd.read_json(self.path, encoding='ISO-8859-1')
-
-    def select_cols(self) -> pd.DataFrame:
-        '''select the columns to use from dataframe'''
-        return self._data.loc[:, self.cols]
+    def query_table(self) -> pd.DataFrame:
+        query_string = '''
+            SELECT Description, Amount, City_State, Zip_Code, Category
+            FROM `rolling_statements.spend_statements2`
+            WHERE Date >= DATE_SUB(CURRENT_DATE(), INTERVAL @num MONTH)
+            ORDER BY Date DESC
+            ;
+        '''
+        job_configs = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter('num', 'INT64', self.months)
+            ]
+        )
+        query_job = (
+            self.client.query(
+                query=query_string,
+                job_config=job_configs,
+                ).to_dataframe()
+        )
+        return query_job
 
     def loader_output(self) -> pd.DataFrame:
         'run all loading steps and perform data checks'
-        self.to_dataframe()
-        self.select_cols()
-
-        if self._data is None:
-            raise ValueError('data is none')
-
-        if self._req_columns_check() is False:
-            raise ValueError('not all required columns are loaded')
+        self._data = self.query_table()
+        self._data.rename(columns={'City_State': 'City/State'}, inplace=True)
         return self._data
 
 
@@ -195,4 +194,6 @@ class DataCleaner:
 
 
 if __name__ == '__main__':
-    BigqueryDataLoader()._client_detail()
+    loader = (BigqueryDataLoader().loader_output())
+    print(loader)
+    print(DataCleaner(data_loader=loader).cleaner_output())

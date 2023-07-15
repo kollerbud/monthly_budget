@@ -1,59 +1,65 @@
 # using ml flow to train model
 '''Run the train pipeline or load pipeline'''
-import mlflow
-from data_upload import MLFlowToBucket
 from encoding import MakeDataEncoder
-from data_loader import DataCleaner, CSVDataLoader
+from data_loader import DataCleaner, BigqueryDataLoader
 from modeling import TrainModel
 from sklearn.ensemble import RandomForestClassifier
+from google.cloud import aiplatform
+from _auth import credentials
+import os
+from dotenv import load_dotenv
 
 
-# tracking info will be local, cloudsql is somewhat costly
-mlflow_tracking_uri = 'sqlite:///monthly_budget.db'
-mlflow.set_tracking_uri(uri=mlflow_tracking_uri)
-mlflow.set_experiment(experiment_name='budget_model')
+load_dotenv()
+
+aiplatform.init(credentials=credentials(),
+                project=os.getenv('project_id'))
 
 
 # training
-def train_pipeline(raw_file_path: str):
+def train_pipeline():
 
-    loader = CSVDataLoader(file_path=raw_file_path,
-                           cols=['Description', 'Amount', 'City/State',
-                                 'Zip Code', 'Category'])
-    clean_data = DataCleaner(loader.loader_output()).cleaner_output()
-    encoder = MakeDataEncoder(cleaned_data=clean_data).encoded_data()
+    loader = BigqueryDataLoader(months=24).loader_output()
+    clean_data = DataCleaner(loader).cleaner_output()
+    encoder = MakeDataEncoder(cleaned_data=clean_data)
+    encoded_data = encoder.encode_data()
+    encoder.save_encoders(path='./src/models')
 
-    with mlflow.start_run():
+    params = {'n_estimators': 1000,
+              'n_jobs': 6,
+              'random_state': 2,
+              }
+    use_model = RandomForestClassifier(**params)
+    m = TrainModel(encoded_data=encoded_data, model=use_model)
+    m.train_model()
+    m.save_models(model_loc='./src/models')
 
-        params = {'n_estimators': 1000,
-                  'n_jobs': 6,
-                  'random_state': 2,
-                  }
-        mlflow.log_params(params)
+    # upload encoders & models to Cloud Bucket
 
-        use_model = RandomForestClassifier(**params)
-        m = TrainModel(encoded_data=encoder, model=use_model)
-        m.train_model()
-        mlflow.log_param('accuracy score', m.score())
-        mlflow.sklearn.log_model(use_model, artifact_path='budget')
+    model = aiplatform.Model
+    model.upload_scikit_learn_model_file(
+        model_file_path='./src/models/model.pkl',
+        sklearn_version='1.0',
+        display_name='randomforest_model',
+        parent_model=model.list(
+            'display_name="randomforest_model"')[0].resource_name
+    )
 
-        mlflow.sklearn.log_model(encoder['encoders'],
-                                 artifact_path='vectorizer')
+    model.upload_scikit_learn_model_file(
+        model_file_path='./src/models/desp_encoder.pkl',
+        sklearn_version='1.0',
+        display_name='randomforest_model',
+        parent_model=model.list(
+            'display_name="description_encoder"')[0].resource_name
+    )
 
-        mlflow.end_run()
+    model.upload_scikit_learn_model_file(
+        model_file_path='./src/models/target_encoder.pkl',
+        sklearn_version='1.0',
+        display_name='randomforest_model',
+        parent_model=model.list(
+            'display_name="target_encoder"')[0].resource_name
+    )
 
-
-def save_to_bucket(local_path):
-
-    MLFlowToBucket().upload_files(
-        path=local_path,
-        bucket_name='monthly_budget_models')
-
-
-def load_pipeline():
-
-    return None
-
-
-# train_pipeline('raw_data/activity_all.csv')
-save_to_bucket(local_path='mlruns/1/dee7cad0a1e84a3cbe65d29503d74faa')
+if __name__ == '__main__':
+    train_pipeline()

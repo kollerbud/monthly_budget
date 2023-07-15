@@ -1,9 +1,11 @@
 db-dtypes
-google-cloud-bigquery
-google-cloud-storage
+google-cloud-aiplatform
 grpcio-status
-mlflow
+lightgbm
 pip-chill
-python-dotenv
-streamlit
 plotly
+pytest
+python-dotenv
+shap
+streamlit
+flask

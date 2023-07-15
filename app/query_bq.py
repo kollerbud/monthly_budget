@@ -43,7 +43,7 @@ class RecentSpendsFromBQ:
                     ):
         # cannot parameterize select claus
         join_cols = ', '.join(cols)
-        
+
         query_string = f'''SELECT {join_cols}
                         FROM `rolling_statements.spend_statements2`
                         WHERE Date >= DATE_SUB(CURRENT_DATE(), INTERVAL @num MONTH)
@@ -72,4 +72,3 @@ if __name__ == '__main__':
                 num_months=1
                 )
           )
-

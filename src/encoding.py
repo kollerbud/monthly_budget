@@ -4,7 +4,7 @@ import numpy as np
 import joblib
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
-from data_upload import LoadFromBucket
+from bucket_download import LoadFromBucket
 from data_loader import DataCleaner
 
 
@@ -36,13 +36,13 @@ class MakeDataEncoder:
         '''encode target variable'''
         self.target_encoder = LabelEncoder()
         category = self.clean_data['Category'].values
-        category_encode = (self.target_encoder
-                           .fit_transform(category.reshape(-1, 1).ravel())
-                           )
+        category_encode = (
+            self.target_encoder.fit_transform(category.reshape(-1, 1).ravel())
+            )
 
         return category_encode
 
-    def encoded_data(self) -> TypedDict:
+    def encode_data(self) -> TypedDict:
         'combine encoded and unencoded columns'
 
         feature_data = np.concatenate(
@@ -69,25 +69,42 @@ class LoadEncoderFromBucket:
     target_encoder = None
 
     def __init__(self,
-                 clean_data: Type[DataCleaner],
-                 path: str) -> None:
+                 clean_data: Type[DataCleaner] = None,
+                 ) -> None:
         self.clean_data = clean_data
-        self.path = path
 
-    def load_vectorizer(self):
+    def load_vectorizer(self,
+                        bucket_name: str,
+                        encoder_name: str,
+                        ):
         'load saved vectorizer from gcp bucket'
-        vec = LoadFromBucket().load_vector_from_bucket(
-            bucket_name='monthly_budget_models',
-            model_blob=self.path
+        vec = LoadFromBucket().load_from_uri(
+            file_bucket=bucket_name,
+            file_name=encoder_name
         )
+        self.feature_encoder = joblib.load(vec)
+        return self
 
-        return vec
+    def load_target_encoder(self,
+                            bucket_name: str,
+                            encoder_name: str,
+                            ):
+        'load saved vectorizer from gcp bucket'
+        vec = LoadFromBucket().load_from_uri(
+            file_bucket=bucket_name,
+            file_name=encoder_name
+        )
+        self.target_encoder = joblib.load(vec)
+        return self
 
     def descp_encode(self) -> np.ndarray:
         '''encode text columns'''
         # load CountVectorizer
-        count_vec = joblib.load(self.load_vectorizer())[0]
-        count_matrix = count_vec.transform(self.clean_data['Description'])
+        if self.feature_encoder is None:
+            raise ValueError('feature encoder is None')
+        count_matrix = (
+            self.feature_encoder.transform(self.clean_data['Description'])
+            )
         matrix_array = count_matrix.toarray()
 
         return matrix_array
@@ -98,13 +115,16 @@ class LoadEncoderFromBucket:
 
     def target_encode(self) -> np.ndarray:
         '''encode target variable'''
-        encode = joblib.load(self.load_vectorizer())[1]
+        if self.target_encoder is None:
+            raise ValueError('target encoder is None')
         category = self.clean_data['Category'].values
-        category_encode = encode.transform(category.reshape(-1, 1).ravel())
+        category_encode = (
+            self.target_encoder.transform(category.reshape(-1, 1).ravel())
+            )
 
         return category_encode
 
-    def encoded_data(self) -> np.ndarray:
+    def encode_data(self) -> np.ndarray:
         'combine encoded and unencoded columns'
 
         feature_data = np.concatenate(
@@ -121,3 +141,5 @@ class LoadEncoderFromLocal:
     def __init__(self) -> None:
         pass
 
+if __name__ == '__main__':
+    None

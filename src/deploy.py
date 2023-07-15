@@ -4,29 +4,58 @@ from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from encoding import LoadEncoderFromBucket
 from modeling import LoadModelFromBucket
-from data_loader import JsonDataLoader, DataCleaner
+from data_loader import JsonDataLoader, DataCleaner, CSVDataLoader
+from google.cloud import aiplatform
+from _auth import credentials
+
 
 load_dotenv()
+aiplatform.init(credentials=credentials(),
+                project=os.getenv('project_id'))
+model = aiplatform.Model
 
 
-def run(runs_path: str, data):
+def run(data_or_path: str):
     '''prepare feature and target data
         runs_path should be in mlruns format,
         example: mlruns/1/12345
     '''
     loader = JsonDataLoader(
-                file_path=data,
+                file_path=data_or_path,
                 cols=['Description', 'Amount', 'City/State',
                       'Zip Code', 'Category'])
     loader_data = loader.loader_output()
     data_cleaner = DataCleaner(data_loader=loader_data).cleaner_output()
 
-    encoder = LoadEncoderFromBucket(clean_data=data_cleaner,
-                                    path=runs_path).encoded_data()
-    model = LoadModelFromBucket(encoded_data=encoder,
-                                model_path=runs_path)
+    encoder = LoadEncoderFromBucket(clean_data=data_cleaner)
+    encoder.load_vectorizer(
+        bucket_name=model.list(
+            'display_name="description_encoder"',
+            credentials=credentials()
+        )[0].uri,
+        encoder_name='model.pkl'
+    )
 
-    return model.result()
+    encoder.load_target_encoder(
+        bucket_name=model.list(
+            'display_name="target_encoder"',
+            credentials=credentials()
+        )[0].uri,
+        encoder_name='model.pkl'
+    )
+    encoded_data = encoder.encode_data()
+
+    ml_model = LoadModelFromBucket(encoded_data=encoded_data)
+    ml_model.load_bucket_model(
+        bucket_name=model.list(
+            'display_name="randomforest_model"',
+            credentials=credentials()
+        )[0].uri,
+        model_name='model.pkl'
+    )
+    ml_model.target_encoder = encoder.target_encoder
+
+    return ml_model.result()
 
 
 # build Flask app
@@ -36,11 +65,9 @@ app = Flask(__name__)
 @app.route('/predict', methods=['GET', 'POST'])
 def predict_endpoint():
     'run prediction endpoint'
-    ml_repo_path = 'mlruns/1/dee7cad0a1e84a3cbe65d29503d74faa'
     data_package = request.get_json()
 
-    pred_result = run(runs_path=ml_repo_path,
-                      data=data_package)
+    pred_result = run(data_or_path=data_package)
 
     pred_list = pred_result.tolist()
 
@@ -48,7 +75,6 @@ def predict_endpoint():
         'category': pred_list,
     }
     return jsonify(result)
-
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0",
