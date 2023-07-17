@@ -1,4 +1,4 @@
-From python:3.8-slim
+From python:3.10-slim
 
 WORKDIR /src
 ENV PORT=8080
@@ -8,9 +8,10 @@ ENV PYTHONUNBUFFERED True
 
 RUN python -m pip install -U pip
 
-COPY requirements.txt .
+COPY docker_requirements.txt .
 
-RUN pip install --upgrade --no-cache-dir -r requirements.txt
+RUN pip install --upgrade --no-cache-dir -r docker_requirements.txt \
+    && rm -rf /root/.cache
 
 COPY ./src ./src
 

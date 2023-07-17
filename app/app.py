@@ -31,7 +31,7 @@ with st.sidebar:
 
     statement_data_json = df_statements.to_json()
 
-    url = os.getenv('cloudRunURL')
+    url = 'http://127.0.0.1:8080'
     pred_url = url + '/predict'
 
     if st.button(label='run spend'):

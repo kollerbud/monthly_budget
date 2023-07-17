@@ -1,12 +1,7 @@
-db-dtypes
 flask
 google-cloud-aiplatform
 grpcio-status
 imbalanced-learn
-lightgbm
-pip-chill
-plotly
-pytest
 python-dotenv
 shap
-streamlit
+gunicorn
