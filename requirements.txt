@@ -10,3 +10,5 @@ pytest
 python-dotenv
 shap
 streamlit
+flask
+gunicorn

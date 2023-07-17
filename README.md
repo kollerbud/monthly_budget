@@ -65,4 +65,5 @@ App url : <https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/>
 
 * GCP
     * BigQuery optimization: minium query size is 10mb, I need to find ways to reduce query requests calls
+    * Write directly to BigQuery (streaming) has a cost of $0.01/200mb
     
