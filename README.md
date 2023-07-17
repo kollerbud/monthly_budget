@@ -24,3 +24,6 @@ App url : <https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/>
 * local testing/deployment:
     * Container: docker
     * testing: pytest
+
+
+## note for my future self
