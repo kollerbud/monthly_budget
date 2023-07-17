@@ -60,6 +60,3 @@ def train_pipeline():
         parent_model=model.list(
             'display_name="target_encoder"')[0].resource_name
     )
-
-if __name__ == '__main__':
-    train_pipeline()

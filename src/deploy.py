@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from encoding import LoadEncoderFromBucket
 from modeling import LoadModelFromBucket
-from data_loader import JsonDataLoader, DataCleaner, CSVDataLoader
+from data_loader import JsonDataLoader, DataCleaner
 from google.cloud import aiplatform
 from _auth import credentials
 
