@@ -17,9 +17,9 @@ App url : <https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/>
     * Model upload to GCP Bucket -> Cloud run using the latest model -> Make prediction
 
 ## pipeline architect
-![pipe_image](https://github.com/kollerbud/monthly_budget/blob/vertex_ai/img/budget-2023-07-15-0123.png)
+![pipe_image](https://github.com/kollerbud/monthly_budget/blob/master/img/budget-2023-07-15-0123.png)
 
-* Tech stack & Cloud services:
+Tech stack & Cloud services:
 * User input(me): Google_sheets
 * Serverless Container: [Cloud Run](https://cloud.google.com/run)
 * Data warehouse: [BigQuery](https://cloud.google.com/bigquery)
@@ -53,7 +53,7 @@ App url : <https://kollerbud-monthly-budget-appapp-pcogau.streamlit.app/>
      - something weird with google sheets to BigQuery, need to adjust 
 
 * ML
-    * over sampling was needed, I was able to bring the prediction accuracy from 90% -> 99%
+    * over sampling was needed, I was able to bring the prediction accuracy from 90% -> 99%*<font size='0.5'>(in training)</font>
     * factory/strategy pattern was painful to write at first, but quite good when I have \
     decided to refactor some components
     

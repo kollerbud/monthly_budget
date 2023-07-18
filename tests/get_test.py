@@ -27,11 +27,10 @@ def test_deployed(url):
     new_act_json = new_act.to_json()
 
     response = requests.post(url=url, json=new_act_json, timeout=60)
-    print(response.content)
 
     print(response.status_code)
     print(response.json())
 
 
-test_local('http://127.0.0.1:8080/predict')
+#test_local('http://127.0.0.1:8080/predict')
 #test_deployed(os.getenv('cloudRunURL')+'/predict')

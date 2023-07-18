@@ -10,51 +10,15 @@ from query_bq import RecentSpendsFromBQ
 load_dotenv()
 
 
-df_statements = RecentSpendsFromBQ().build_query(
-                cols=['Date', 'Description', 'City_State', 'Amount',
-                      'Zip_Code', 'Category'],
-                num_months=3
-                )
-# required columns
-# 'Description', 'Amount', 'City/State', 'Zip Code', 'Category'
-df_statements.rename(columns={'City_State': 'City/State',
-                              'Zip_Code': 'Zip Code'},
-                     inplace=True
-                     )
-# drop empty category, it is card payment
-df_statements.dropna(subset=['Category'], inplace=True)
-
-
-with st.sidebar:
-    # flow control side bar
-    Side_bar_ran = False
-
-    statement_data_json = df_statements.to_json()
-
-    url = 'http://127.0.0.1:8080'
-    pred_url = url + '/predict'
-
-    if st.button(label='run spend'):
-        response = requests.post(pred_url, json=statement_data_json,
-                                 timeout=60)
-
-        st.write(f'response code: {response.status_code} ')
-        df_statements['pred_category'] = response.json()['category']
-        # flow control side bar
-        Side_bar_ran = True
-    st.write('Cold start from Cloud run might cause errors, rerun if runs into issue')
-    st.write('Dollar Amounts have been changed for privacy')
-
-
-def data_cleanup(df: pd.DataFrame=None) -> pd.DataFrame:
+def data_cleanup(df: pd.DataFrame = None) -> pd.DataFrame:
     '''remove extra fields and mask actual spend'''
     df_stat = df.copy()
     scale_factor = os.getenv('scaleFactor')
 
     df_stat['Amount'] = df_stat['Amount'].astype(float)
     df_stat['Amount'] = (df_stat['Amount']
-                           .apply(lambda x: x*float(scale_factor))
-                           )
+                         .apply(lambda x: x*float(scale_factor))
+                         )
     df_stat['Category'] = df_stat['Category'].str.split('-').str[0]
 
     for col in ['Description', 'City/State']:
@@ -67,8 +31,9 @@ def data_cleanup(df: pd.DataFrame=None) -> pd.DataFrame:
         )
         df_stat[col] = df_stat[col].str.strip()
 
-    df_stat['Description']= (df_stat['Description']
-                             .str.replace(r'\s+', ' ', regex=True))
+    df_stat['Description'] = (df_stat['Description']
+                              .str.replace(r'\s+', ' ', regex=True)
+                              )
 
     df_stat['Description'] = [
         x.replace(str(y), '') for x,y in
@@ -76,12 +41,55 @@ def data_cleanup(df: pd.DataFrame=None) -> pd.DataFrame:
             df_stat['City/State'])
     ]
 
-    return df_stat.loc[:, df_stat.columns !='City/State']
+    return df_stat.loc[:, df_stat.columns != 'City/State']
 
 
-if Side_bar_ran:
-    df_data = data_cleanup(df=df_statements)
-    df_data['Date'] = pd.to_datetime(df_data['Date'])
+df_statements = RecentSpendsFromBQ().build_query(
+                    cols=['Date', 'Description', 'City_State', 'Amount',
+                           'Zip_Code', 'Category'],
+                    num_months=3
+                )
+# required columns
+# 'Description', 'Amount', 'City/State', 'Zip Code', 'Category'
+
+df_statements.rename(columns={'City_State': 'City/State',
+                              'Zip_Code': 'Zip Code'},
+                     inplace=True
+                     )
+# drop empty category, it is card payment
+df_statements.dropna(subset=['Category'], inplace=True)
+df_statements['Date'] = pd.to_datetime(df_statements['Date'])
+df_data = data_cleanup(df=df_statements)
+
+if 'clicked' not in st.session_state:
+    st.session_state.clicked = False
+
+
+def click_button():
+    st.session_state.clicked = True
+
+
+with st.sidebar:
+    # flow control side bar
+    statement_data_json = df_statements.to_json()
+
+    url = os.getenv('cloudRunURL')
+    pred_url = url + '/predict'
+
+    st.button(label='run spend', on_click=click_button)
+
+    st.write('Cold start from Cloud run might cause errors, rerun if runs into issue')
+    st.write('Dollar Amounts have been changed for privacy')
+    prediction_button = False
+    if st.button('run prediction'):
+        response = requests.post(pred_url, json=statement_data_json,
+                                 timeout=60)
+        st.write(f'response code: {response.status_code}')
+        df_data['pred_category'] = response.json()['category']
+        prediction_button = True
+
+
+if st.session_state.clicked:
 
     current_date = datetime.now()  # Get the current date
     last_month_start = datetime(current_date.year, current_date.month - 1, 1)  # Start of last month
@@ -109,8 +117,11 @@ if Side_bar_ran:
     st.plotly_chart(cat1_fig, use_container_width=True)
     st.write(f"Current month so far spend(plus rent): {df_current['Amount'].sum()+2130}")
 
+    # small sample of the spend
+    st.dataframe(df_current.loc[:10, ['Date', 'Zip Code', 'Category']])
+
     # top 5 spend by place
-    top_n_by_places = df_current.groupby('Description')['Amount'].sum().nlargest(10)
+    top_n_by_places = df_current.groupby('Description')['Amount'].sum().nlargest(5)
     top5_fig = px.bar(top_n_by_places, x=top_n_by_places.values,
                       y=top_n_by_places.index, orientation='h',
                       title="Top n Spend by Description")
@@ -120,11 +131,6 @@ if Side_bar_ran:
                            yaxis_tickangle=0, barmode='stack',
                            yaxis={'categoryorder':'total ascending'})
     st.plotly_chart(top5_fig, use_container_width=False)
-
-    # current month spend dataframe
-    st.dataframe(df_current)
-
-    # prediction accuracy
 
     # last 2 months and current spend comparisons
     months = ['2 months', 'Last', 'Current']
@@ -136,11 +142,17 @@ if Side_bar_ran:
                  y='Month', x='Spends',
                  orientation='h',
                  category_orders={'Month': months},
-
-                 )
+                )
     fig.update_traces(texttemplate='%{x:.2s}', textposition='outside',
                       text=months, width=0.4)
     fig.update_layout(xaxis_title="Spend", yaxis_title="Month",
                       yaxis_tickangle=0, barmode='stack')
 
     st.plotly_chart(fig, use_container_width=False)
+
+if prediction_button:
+    st.write('actual spend category and predicted spend category')
+    current_month = datetime.now().month
+    st.dataframe(df_data.loc[df_data['Date'].dt.month == current_month,
+                             ['Description', 'Category', 'pred_category']]
+                 )
